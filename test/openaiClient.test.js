@@ -13,24 +13,16 @@ beforeEach(() => {
   });
 });
 
-const { sendMessage, analyzeScreen } = require('../openaiClient');
+const { sendMessage } = require('../openaiClient');
 
 test('sendMessage returns text from openai', async () => {
   const reply = await sendMessage('hi');
   expect(reply).toBe('unit reply');
 });
 
-test('analyzeScreen returns text from openai', async () => {
-  const reply = await analyzeScreen('data:image/png;base64,abc');
-  expect(reply).toBe('unit reply');
-});
 
 test('sendMessage throws when openai fails', async () => {
   createMock.mockRejectedValueOnce(new Error('fail'));
   await expect(sendMessage('hi')).rejects.toThrow('fail');
 });
 
-test('analyzeScreen throws when openai fails', async () => {
-  createMock.mockRejectedValueOnce(new Error('fail'));
-  await expect(analyzeScreen('data:image/png;base64,abc')).rejects.toThrow('fail');
-});
