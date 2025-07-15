@@ -7,8 +7,10 @@ function ask(question) {
 }
 
 (async () => {
-  const answer = await ask('Choose environment (1) Local (2) OpenAI: ');
-  const env = /^1|local/i.test(answer) ? 'local' : 'openai';
+  const answer = await ask('Choose environment (1) Local (2) OpenAI (3) Ollama: ');
+  let env = 'openai';
+  if (/^1|local/i.test(answer)) env = 'local';
+  else if (/^3|ollama/i.test(answer)) env = 'ollama';
 
   const child = spawn('node', ['server.js'], {
     stdio: 'inherit',
