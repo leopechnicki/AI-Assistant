@@ -23,17 +23,14 @@ Run unit and integration tests with:
 npm test
 ```
 
-## Code Editing
 
-You can replace files in the project by sending a chat message that begins with
-`CODE:` followed by the relative file path and the new contents separated by a
-newline:
+## Audio and Live Conversation
 
-```
-CODE:path/to/file.js
-<new file contents>
-```
+Two extra controls are available on the chat page:
 
-Only paths that resolve inside the project directory are allowed. Be careful
-exposing this feature as it can overwrite important files. Grant access only to
-trusted users.
+- **Send Audio** records three seconds of audio and sends it to the server.
+- **Start Live** opens a live connection that streams assistant replies as they arrive.
+
+## Bluetooth via MCP
+
+The server can attempt to connect to a Bluetooth device using MCP. Send a `POST` request to `/api/connect` with a JSON body containing an `address` field.
