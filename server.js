@@ -1,26 +1,17 @@
 const express = require('express');
 const morgan = require('morgan');
 const app = express();
+
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '2mb' }));
 const { sendMessage, analyzeScreen } = require('./openaiClient');
+
 
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Message is required' });
   try {
     const reply = await sendMessage(message);
-    res.json({ reply });
-  } catch (err) {
-    res.status(500).json({ error: 'OpenAI request failed' });
-  }
-});
-
-app.post('/api/screen', async (req, res) => {
-  const { image } = req.body;
-  if (!image) return res.status(400).json({ error: 'Image is required' });
-  try {
-    const reply = await analyzeScreen(image);
     res.json({ reply });
   } catch (err) {
     res.status(500).json({ error: 'OpenAI request failed' });
