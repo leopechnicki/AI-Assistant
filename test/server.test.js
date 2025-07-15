@@ -29,7 +29,7 @@ describe('POST /api/chat', () => {
   });
 
   it('returns 413 for large payloads', async () => {
-    const bigMessage = 'a'.repeat(1024 * 200); // 200 KB
+    const bigMessage = 'a'.repeat(1024 * 2100); // >2 MB
     const res = await request(app).post('/api/chat').send({ message: bigMessage });
     expect(res.statusCode).toBe(413);
   });
@@ -54,7 +54,7 @@ describe('POST /api/screen', () => {
   });
 
   it('returns 413 for large payloads', async () => {
-    const bigImage = 'data:image/png;base64,' + 'a'.repeat(1024 * 200);
+    const bigImage = 'data:image/png;base64,' + 'a'.repeat(1024 * 2100);
     const res = await request(app).post('/api/screen').send({ image: bigImage });
     expect(res.statusCode).toBe(413);
   });

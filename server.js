@@ -1,6 +1,8 @@
 const express = require('express');
+const morgan = require('morgan');
 const app = express();
-app.use(express.json());
+app.use(morgan('tiny'));
+app.use(express.json({ limit: '2mb' }));
 const { sendMessage, analyzeScreen } = require('./openaiClient');
 
 app.post('/api/chat', async (req, res) => {
