@@ -1,6 +1,6 @@
 # AI Assistant Chatbot
 
-This project is a simple chat application that interacts with the OpenAI API using a server-side secret. The web page lets you send messages to the assistant.
+This project is a simple chat application built with React that interacts with the OpenAI API using a server-side secret. The web page lets you send messages to the assistant.
 
 ## Setup
 
@@ -23,13 +23,6 @@ Run unit and integration tests with:
 npm test
 ```
 
-
-## Audio and Live Conversation
-
-Two extra controls are available on the chat page:
-
-- **Send Audio** records three seconds of audio and sends it to the server.
-- **Start Live** opens a live connection that streams assistant replies as they arrive.
 
 ## Bluetooth via MCP
 

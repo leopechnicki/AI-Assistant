@@ -76,12 +76,11 @@ describe('additional routes', () => {
     app = require('../server');
   });
 
-  it('accepts audio', async () => {
+  it('returns 404 for removed audio route', async () => {
     const res = await request(app)
       .post('/api/audio')
       .send({ audio: 'testdata' });
-    expect(res.statusCode).toBe(200);
-    expect(res.body.reply).toBe('Audio received');
+    expect(res.statusCode).toBe(404);
   });
 
   it('connects via bluetooth', async () => {

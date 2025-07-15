@@ -4,62 +4,46 @@ const morgan = require('morgan');
 
 const app = express();
 
-app.use(morgan('tiny'));
+// Use more verbose logging
+app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
 const { sendMessage } = require('./openaiClient');
 const MCP = require('./mcp');
 const mcp = new MCP();
 
-const clients = [];
-
-
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
-  if (!message) return res.status(400).json({ error: 'Message is required' });
+  if (!message) {
+    console.log('POST /api/chat missing message');
+    return res.status(400).json({ error: 'Message is required' });
+  }
   try {
+    console.log(`POST /api/chat: ${message}`);
     const reply = await sendMessage(message);
+    console.log(`reply: ${reply}`);
     res.json({ reply });
-    broadcast({ reply });
   } catch (err) {
+    console.error('OpenAI request failed', err);
     res.status(500).json({ error: 'OpenAI request failed' });
   }
 });
 
-app.post('/api/audio', async (req, res) => {
-  const { audio } = req.body;
-  if (!audio) return res.status(400).json({ error: 'Audio is required' });
-  res.json({ reply: 'Audio received' });
-});
-
 app.post('/api/connect', async (req, res) => {
   const { address } = req.body;
-  if (!address) return res.status(400).json({ error: 'Address is required' });
+  if (!address) {
+    console.log('POST /api/connect missing address');
+    return res.status(400).json({ error: 'Address is required' });
+  }
   try {
+    console.log(`Connecting to ${address}`);
     const result = await mcp.connectBluetooth(address);
+    console.log('connected');
     res.json({ reply: result });
   } catch (err) {
+    console.error('Connection failed', err);
     res.status(500).json({ error: 'Connection failed' });
   }
 });
-
-app.get('/api/live', (req, res) => {
-  res.set({
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive'
-  });
-  res.flushHeaders();
-  clients.push(res);
-  req.on('close', () => {
-    const idx = clients.indexOf(res);
-    if (idx !== -1) clients.splice(idx, 1);
-  });
-});
-
-function broadcast(data) {
-  const payload = `data: ${JSON.stringify(data)}\n\n`;
-  clients.forEach(res => res.write(payload));
-}
 
 app.use(express.static('public'));
 
