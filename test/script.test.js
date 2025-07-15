@@ -21,3 +21,12 @@ test('pressing Enter sends the message', async () => {
   await new Promise(r => setTimeout(r, 0));
   expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({ method: 'POST' }));
 });
+
+test('clicking shutdown sends request', async () => {
+  setupChat(document);
+  await new Promise(r => setTimeout(r, 0));
+  const button = document.getElementById('shutdown');
+  button.click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(fetch).toHaveBeenCalledWith('/api/shutdown', expect.objectContaining({ method: 'POST' }));
+});
