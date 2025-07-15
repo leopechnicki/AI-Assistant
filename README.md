@@ -21,3 +21,18 @@ Run unit and integration tests with:
 ```bash
 npm test
 ```
+
+## Code Editing
+
+You can replace files in the project by sending a chat message that begins with
+`CODE:` followed by the relative file path and the new contents separated by a
+newline:
+
+```
+CODE:path/to/file.js
+<new file contents>
+```
+
+Only paths that resolve inside the project directory are allowed. Be careful
+exposing this feature as it can overwrite important files. Grant access only to
+trusted users.

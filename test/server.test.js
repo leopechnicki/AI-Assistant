@@ -23,6 +23,28 @@ describe('POST /api/chat', () => {
     expect(res.body.reply).toBe('mock reply');
   });
 
+  it('edits a file when message begins with CODE:', async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const target = path.join(__dirname, 'tmp.txt');
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ message: 'CODE:test/tmp.txt\nhello' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toMatch(/Updated/);
+    const content = fs.readFileSync(target, 'utf8');
+    expect(content).toBe('hello');
+    fs.unlinkSync(target);
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid CODE paths', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ message: 'CODE:../outside.txt\nhello' });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('requires message', async () => {
     const res = await request(app).post('/api/chat').send({});
     expect(res.statusCode).toBe(400);
