@@ -4,7 +4,11 @@ const OpenAI = require('openai');
 
 // Prepare a single OpenAI instance whose behaviour can be customised per test.
 const createMock = jest.fn();
-const openaiInstance = { chat: { completions: { create: createMock } } };
+const transcribeMock = jest.fn();
+const openaiInstance = {
+  chat: { completions: { create: createMock } },
+  audio: { transcriptions: { create: transcribeMock } }
+};
 OpenAI.mockImplementation(() => openaiInstance);
 
 let app;
@@ -20,9 +24,11 @@ beforeEach(() => {
 
 beforeEach(() => {
   createMock.mockReset();
+  transcribeMock.mockReset();
   createMock.mockResolvedValue({
     choices: [{ message: { content: 'mock reply' } }]
   });
+  transcribeMock.mockResolvedValue({ text: 'audio reply' });
 });
 
 describe('POST /api/chat', () => {
@@ -76,11 +82,13 @@ describe('additional routes', () => {
     app = require('../server');
   });
 
-  it('returns 404 for removed audio route', async () => {
+  it('transcribes audio', async () => {
     const res = await request(app)
       .post('/api/audio')
-      .send({ audio: 'testdata' });
-    expect(res.statusCode).toBe(404);
+      .send({ audio: Buffer.from('hi').toString('base64') });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toBe('audio reply');
+    expect(transcribeMock).toHaveBeenCalled();
   });
 
   it('connects via bluetooth', async () => {

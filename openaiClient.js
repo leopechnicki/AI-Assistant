@@ -27,4 +27,17 @@ function setClientFactory(fn) {
   createClient = fn;
 }
 
-module.exports = { sendMessage, setEnv, setClientFactory };
+async function transcribeAudio(buffer) {
+  if (env === 'local') {
+    return 'audio transcription not available in local mode';
+  }
+  const openai = createClient();
+  const file = new File([buffer], 'audio.webm', { type: 'audio/webm' });
+  const result = await openai.audio.transcriptions.create({
+    file,
+    model: 'whisper-1'
+  });
+  return result.text;
+}
+
+module.exports = { sendMessage, setEnv, setClientFactory, transcribeAudio };

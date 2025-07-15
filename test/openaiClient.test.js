@@ -3,21 +3,27 @@ jest.mock('openai');
 const OpenAI = require('openai');
 
 const createMock = jest.fn();
-const openaiInstance = { chat: { completions: { create: createMock } } };
+const transcribeMock = jest.fn();
+const openaiInstance = {
+  chat: { completions: { create: createMock } },
+  audio: { transcriptions: { create: transcribeMock } }
+};
 OpenAI.mockImplementation(() => openaiInstance);
 
 beforeEach(() => {
   createMock.mockReset();
+  transcribeMock.mockReset();
   createMock.mockResolvedValue({
     choices: [{ message: { content: 'unit reply' } }]
   });
+  transcribeMock.mockResolvedValue({ text: 'audio text' });
 });
 
-let sendMessage, setEnv, setClientFactory;
+let sendMessage, setEnv, setClientFactory, transcribeAudio;
 
 beforeEach(() => {
   jest.resetModules();
-  ({ sendMessage, setEnv, setClientFactory } = require('../openaiClient'));
+  ({ sendMessage, setEnv, setClientFactory, transcribeAudio } = require('../openaiClient'));
   setClientFactory(() => openaiInstance);
 });
 
@@ -45,5 +51,11 @@ test('sendMessage uses MCP when env is local', async () => {
 test('sendMessage throws when openai fails', async () => {
   createMock.mockRejectedValueOnce(new Error('fail'));
   await expect(sendMessage('hi')).rejects.toThrow('fail');
+});
+
+test('transcribeAudio returns text from openai', async () => {
+  const res = await transcribeAudio(Buffer.from('a'));
+  expect(transcribeMock).toHaveBeenCalled();
+  expect(res).toBe('audio text');
 });
 

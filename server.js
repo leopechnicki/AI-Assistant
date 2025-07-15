@@ -7,7 +7,7 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage } = require('./openaiClient');
+const { sendMessage, transcribeAudio } = require('./openaiClient');
 const MCP = require('./mcp');
 const mcp = new MCP();
 
@@ -25,6 +25,22 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error('OpenAI request failed', err);
     res.status(500).json({ error: 'OpenAI request failed' });
+  }
+});
+
+app.post('/api/audio', async (req, res) => {
+  const { audio } = req.body;
+  if (!audio) {
+    console.log('POST /api/audio missing audio');
+    return res.status(400).json({ error: 'Audio is required' });
+  }
+  try {
+    const buffer = Buffer.from(audio, 'base64');
+    const reply = await transcribeAudio(buffer);
+    res.json({ reply });
+  } catch (err) {
+    console.error('Audio transcription failed', err);
+    res.status(500).json({ error: 'Audio transcription failed' });
   }
 });
 

@@ -27,3 +27,7 @@ npm test
 ## Bluetooth via MCP
 
 The server can attempt to connect to a Bluetooth device using MCP. Send a `POST` request to `/api/connect` with a JSON body containing an `address` field.
+
+## Audio messages
+
+Hold the **Record** button to capture an audio message and release to send it to the assistant. The recording is transcribed on the server via OpenAI Whisper and the resulting text reply is displayed in the chat.
