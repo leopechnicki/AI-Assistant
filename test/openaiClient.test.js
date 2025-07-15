@@ -13,11 +13,29 @@ beforeEach(() => {
   });
 });
 
-const { sendMessage } = require('../openaiClient');
+let sendMessage, setEnv;
+
+beforeEach(() => {
+  jest.resetModules();
+  ({ sendMessage, setEnv } = require('../openaiClient'));
+});
 
 test('sendMessage returns text from openai', async () => {
   const reply = await sendMessage('hi');
   expect(reply).toBe('unit reply');
+});
+
+test('sendMessage uses MCP when env is local', async () => {
+  setEnv('local');
+  const broadcast = jest.fn().mockResolvedValue(['ok']);
+  jest.doMock('../mcp', () => {
+    return jest.fn().mockImplementation(() => ({ broadcast }));
+  });
+  jest.resetModules();
+  ({ sendMessage, setEnv } = require('../openaiClient'));
+  const reply = await sendMessage('hi');
+  expect(broadcast).toHaveBeenCalledWith('hi');
+  expect(reply).toEqual(['ok']);
 });
 
 

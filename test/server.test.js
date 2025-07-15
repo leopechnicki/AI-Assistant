@@ -7,7 +7,15 @@ const createMock = jest.fn();
 const openaiInstance = { chat: { completions: { create: createMock } } };
 OpenAI.mockImplementation(() => openaiInstance);
 
-const app = require('../server');
+let app;
+let setEnv;
+
+beforeEach(() => {
+  jest.resetModules();
+  ({ setEnv } = require('../openaiClient'));
+  setEnv('openai');
+  app = require('../server');
+});
 
 beforeEach(() => {
   createMock.mockReset();
@@ -21,6 +29,23 @@ describe('POST /api/chat', () => {
     const res = await request(app).post('/api/chat').send({ message: 'hi' });
     expect(res.statusCode).toBe(200);
     expect(res.body.reply).toBe('mock reply');
+  });
+
+  it('returns MCP reply in local mode', async () => {
+    setEnv('local');
+    const broadcast = jest.fn().mockResolvedValue(['device']);
+    jest.doMock('../mcp', () => {
+      return jest.fn().mockImplementation(() => ({ broadcast }));
+    });
+    jest.resetModules();
+    ({ setEnv } = require('../openaiClient'));
+    setEnv('local');
+    app = require('../server');
+    const res = await request(app).post('/api/chat').send({ message: 'hi' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toEqual(['device']);
+    expect(broadcast).toHaveBeenCalledWith('hi');
+    expect(createMock).not.toHaveBeenCalled();
   });
 
   it('edits a file when message begins with CODE:', async () => {
