@@ -9,10 +9,11 @@ This project is a simple chat application that interacts with the OpenAI API usi
    npm install
    ```
 2. Provide your OpenAI API key via the `OPENAI_API_KEY` environment variable.
-3. Start the server:
+3. Start the server using `nps` to choose the LLM environment:
    ```bash
-   npm start
+   npx nps start
    ```
+   You'll be prompted to select **Local** (to use devices via MCP) or **OpenAI**.
 4. Open `http://localhost:3000` in your browser.
 
 ## Testing
