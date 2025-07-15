@@ -68,6 +68,23 @@ describe('POST /api/chat', () => {
   });
 });
 
+describe('POST /api/chat/stream', () => {
+  it('streams reply', async () => {
+    async function* gen() {
+      yield { choices: [{ delta: { content: 'a' } }] };
+      yield { choices: [{ delta: { content: 'b' } }] };
+    }
+    createMock.mockResolvedValueOnce(gen());
+    const res = await request(app)
+      .post('/api/chat/stream')
+      .send({ message: 'hi' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+    expect(res.text).toContain('data: a');
+    expect(res.text).toContain('data: b');
+  });
+});
+
 describe('additional routes', () => {
   beforeEach(() => {
     jest.resetModules();

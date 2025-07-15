@@ -7,9 +7,32 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage } = require('./openaiClient');
+const { sendMessage, sendMessageStream } = require('./openaiClient');
 const MCP = require('./mcp');
 const mcp = new MCP();
+
+app.post('/api/chat/stream', async (req, res) => {
+  const { message } = req.body;
+  if (!message) {
+    console.log('POST /api/chat/stream missing message');
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  try {
+    console.log(`POST /api/chat/stream: ${message}`);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.flushHeaders();
+    for await (const chunk of sendMessageStream(message)) {
+      res.write(`data: ${chunk}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err) {
+    console.error('OpenAI stream failed', err);
+    res.end();
+  }
+});
 
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;

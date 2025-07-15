@@ -9,6 +9,7 @@ if (typeof require !== 'undefined') {
 
 function ChatApp() {
   const [messages, setMessages] = React.useState([]);
+  const [useStream, setUseStream] = React.useState(false);
   const inputRef = React.useRef(null);
 
   const addMessage = (role, text) => {
@@ -21,13 +22,47 @@ function ChatApp() {
     if (!text) return;
     addMessage('user', text);
     input.value = '';
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
-    });
-    const data = await res.json();
-    addMessage('assistant', data.reply || data.error);
+    if (useStream) {
+      const res = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let current = '';
+      addMessage('assistant', '');
+      const idx = messages.length + 1;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value);
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+        for (const part of parts) {
+          const line = part.trim();
+          if (line.startsWith('data:')) {
+            const data = line.slice(5).trim();
+            if (data === '[DONE]') continue;
+            current += data;
+            setMessages(prev => {
+              const copy = [...prev];
+              copy[idx] = { role: 'assistant', text: current };
+              return copy;
+            });
+          }
+        }
+      }
+    } else {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      addMessage('assistant', data.reply || data.error);
+    }
   };
 
   const onKeyDown = e => {
@@ -47,6 +82,14 @@ function ChatApp() {
     ),
     React.createElement('div', { className: 'controls' },
       React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown }),
+      React.createElement('label', null,
+        React.createElement('input', {
+          type: 'checkbox',
+          checked: useStream,
+          onChange: e => setUseStream(e.target.checked)
+        }),
+        ' Stream'
+      ),
       React.createElement('button', { id: 'send', onClick: sendText }, 'Send')
     )
   );

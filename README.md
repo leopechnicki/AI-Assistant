@@ -9,12 +9,19 @@ This project is a simple chat application built with React that interacts with t
    npm install
    ```
 2. Provide your OpenAI API key via the `OPENAI_API_KEY` environment variable.
-3. Start the server using `nps` to choose the LLM environment:
+3. (Optional) Set `OLLAMA_MODEL` to change the local model used by Ollama.
+4. Start the server using `nps` to choose the LLM environment:
    ```bash
    npx nps start
    ```
-   You'll be prompted to select **Local** (to use devices via MCP) or **OpenAI**.
-4. Open `http://localhost:3000` in your browser.
+   You'll be prompted to select **Local** (to use devices via MCP), **OpenAI**, or **Ollama**.
+5. Open `http://localhost:3000` in your browser.
+
+## Streaming
+
+Use the **Stream** checkbox in the UI to receive incremental tokens. The server
+exposes a `/api/chat/stream` endpoint that streams responses using
+Server-Sent Events.
 
 ## Testing
 
