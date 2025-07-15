@@ -1,6 +1,6 @@
 # AI Assistant Chatbot
 
-This project is a simple chat application that interacts with the OpenAI API using a server-side secret. The web page lets you send messages to the assistant and optionally share your screen.
+This project is a simple chat application that interacts with the OpenAI API using a server-side secret. The web page lets you send messages to the assistant.
 
 ## Setup
 
