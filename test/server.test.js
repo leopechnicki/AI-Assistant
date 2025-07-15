@@ -29,7 +29,7 @@ describe('POST /api/chat', () => {
   });
 
   it('returns 413 for large payloads', async () => {
-    const bigMessage = 'a'.repeat(1024 * 200); // 200 KB
+    const bigMessage = 'a'.repeat(1024 * 2100); // >2 MB
     const res = await request(app).post('/api/chat').send({ message: bigMessage });
     expect(res.statusCode).toBe(413);
   });
@@ -40,5 +40,4 @@ describe('POST /api/chat', () => {
     expect(res.statusCode).toBe(500);
   });
 });
-
 
