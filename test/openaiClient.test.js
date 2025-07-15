@@ -2,15 +2,16 @@ const OpenAI = require('openai');
 
 jest.mock('openai');
 
-OpenAI.mockImplementation(() => ({
-  chat: {
-    completions: {
-      create: jest.fn(() =>
-        Promise.resolve({ choices: [{ message: { content: 'unit reply' } }] })
-      )
-    }
-  }
-}));
+const createMock = jest.fn();
+const openaiInstance = { chat: { completions: { create: createMock } } };
+OpenAI.mockImplementation(() => openaiInstance);
+
+beforeEach(() => {
+  createMock.mockReset();
+  createMock.mockResolvedValue({
+    choices: [{ message: { content: 'unit reply' } }]
+  });
+});
 
 const { sendMessage, analyzeScreen } = require('../openaiClient');
 
@@ -22,4 +23,14 @@ test('sendMessage returns text from openai', async () => {
 test('analyzeScreen returns text from openai', async () => {
   const reply = await analyzeScreen('data:image/png;base64,abc');
   expect(reply).toBe('unit reply');
+});
+
+test('sendMessage throws when openai fails', async () => {
+  createMock.mockRejectedValueOnce(new Error('fail'));
+  await expect(sendMessage('hi')).rejects.toThrow('fail');
+});
+
+test('analyzeScreen throws when openai fails', async () => {
+  createMock.mockRejectedValueOnce(new Error('fail'));
+  await expect(analyzeScreen('data:image/png;base64,abc')).rejects.toThrow('fail');
 });
