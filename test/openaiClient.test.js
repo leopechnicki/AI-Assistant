@@ -1,6 +1,6 @@
-const OpenAI = require('openai');
-
 jest.mock('openai');
+
+const OpenAI = require('openai');
 
 const createMock = jest.fn();
 const openaiInstance = { chat: { completions: { create: createMock } } };
@@ -13,11 +13,12 @@ beforeEach(() => {
   });
 });
 
-let sendMessage, setEnv;
+let sendMessage, setEnv, setClientFactory;
 
 beforeEach(() => {
   jest.resetModules();
-  ({ sendMessage, setEnv } = require('../openaiClient'));
+  ({ sendMessage, setEnv, setClientFactory } = require('../openaiClient'));
+  setClientFactory(() => openaiInstance);
 });
 
 test('sendMessage returns text from openai', async () => {
@@ -32,7 +33,9 @@ test('sendMessage uses MCP when env is local', async () => {
     return jest.fn().mockImplementation(() => ({ broadcast }));
   });
   jest.resetModules();
-  ({ sendMessage, setEnv } = require('../openaiClient'));
+  ({ sendMessage, setEnv, setClientFactory } = require('../openaiClient'));
+  setClientFactory(() => openaiInstance);
+  setEnv('local');
   const reply = await sendMessage('hi');
   expect(broadcast).toHaveBeenCalledWith('hi');
   expect(reply).toEqual(['ok']);

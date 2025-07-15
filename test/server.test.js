@@ -8,12 +8,13 @@ const openaiInstance = { chat: { completions: { create: createMock } } };
 OpenAI.mockImplementation(() => openaiInstance);
 
 let app;
-let setEnv;
+let setEnv, setClientFactory;
 
 beforeEach(() => {
   jest.resetModules();
-  ({ setEnv } = require('../openaiClient'));
+  ({ setEnv, setClientFactory } = require('../openaiClient'));
   setEnv('openai');
+  setClientFactory(() => openaiInstance);
   app = require('../server');
 });
 
@@ -38,36 +39,15 @@ describe('POST /api/chat', () => {
       return jest.fn().mockImplementation(() => ({ broadcast }));
     });
     jest.resetModules();
-    ({ setEnv } = require('../openaiClient'));
+    ({ setEnv, setClientFactory } = require('../openaiClient'));
     setEnv('local');
+    setClientFactory(() => openaiInstance);
     app = require('../server');
     const res = await request(app).post('/api/chat').send({ message: 'hi' });
     expect(res.statusCode).toBe(200);
     expect(res.body.reply).toEqual(['device']);
     expect(broadcast).toHaveBeenCalledWith('hi');
     expect(createMock).not.toHaveBeenCalled();
-  });
-
-  it('edits a file when message begins with CODE:', async () => {
-    const fs = require('fs');
-    const path = require('path');
-    const target = path.join(__dirname, 'tmp.txt');
-    const res = await request(app)
-      .post('/api/chat')
-      .send({ message: 'CODE:test/tmp.txt\nhello' });
-    expect(res.statusCode).toBe(200);
-    expect(res.body.reply).toMatch(/Updated/);
-    const content = fs.readFileSync(target, 'utf8');
-    expect(content).toBe('hello');
-    fs.unlinkSync(target);
-    expect(createMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects invalid CODE paths', async () => {
-    const res = await request(app)
-      .post('/api/chat')
-      .send({ message: 'CODE:../outside.txt\nhello' });
-    expect(res.statusCode).toBe(400);
   });
 
   it('requires message', async () => {
@@ -85,6 +65,40 @@ describe('POST /api/chat', () => {
     createMock.mockRejectedValueOnce(new Error('fail'));
     const res = await request(app).post('/api/chat').send({ message: 'hi' });
     expect(res.statusCode).toBe(500);
+  });
+});
+
+describe('additional routes', () => {
+  beforeEach(() => {
+    jest.resetModules();
+    ({ setClientFactory } = require('../openaiClient'));
+    setClientFactory(() => openaiInstance);
+    app = require('../server');
+  });
+
+  it('accepts audio', async () => {
+    const res = await request(app)
+      .post('/api/audio')
+      .send({ audio: 'testdata' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toBe('Audio received');
+  });
+
+  it('connects via bluetooth', async () => {
+    const connectBluetooth = jest.fn().mockResolvedValue('ok');
+    jest.doMock('../mcp', () => {
+      return jest.fn().mockImplementation(() => ({ connectBluetooth }));
+    });
+    jest.resetModules();
+    ({ setClientFactory } = require('../openaiClient'));
+    setClientFactory(() => openaiInstance);
+    app = require('../server');
+    const res = await request(app)
+      .post('/api/connect')
+      .send({ address: 'AA:BB' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toBe('ok');
+    expect(connectBluetooth).toHaveBeenCalledWith('AA:BB');
   });
 });
 

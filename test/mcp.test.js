@@ -19,3 +19,13 @@ test('broadcast sends message to all devices', async () => {
   expect(fetch).toHaveBeenCalledWith('http://b:2/message', expect.any(Object));
   expect(res).toHaveLength(2);
 });
+
+test('connectBluetooth delegates to Bluetooth module', async () => {
+  const MCP = require('../mcp');
+  const Bluetooth = require('../bluetooth');
+  jest.spyOn(Bluetooth.prototype, 'connect').mockResolvedValue('connected');
+  const mcp = new MCP();
+  const res = await mcp.connectBluetooth('addr');
+  expect(res).toBe('connected');
+  expect(Bluetooth.prototype.connect).toHaveBeenCalledWith('addr');
+});
