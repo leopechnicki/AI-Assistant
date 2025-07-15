@@ -10,32 +10,16 @@ function setEnv(newEnv) {
   env = newEnv;
 }
 
+function getEnv() {
+  return env;
+}
+
 async function sendMessage(message, devices = []) {
-  if (env === 'local') {
-    const mcp = new MCP(devices);
-    return mcp.broadcast(message);
+  let result = '';
+  for await (const part of sendMessageStream(message, devices)) {
+    result += part;
   }
-
-  if (env === 'ollama') {
-    const res = await fetch('http://localhost:11434/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
-        stream: false,
-        messages: [{ role: 'user', content: message }]
-      })
-    });
-    const data = await res.json();
-    return data.message?.content;
-  }
-
-  const openai = createClient();
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [{ role: 'user', content: message }]
-  });
-  return completion.choices[0].message.content;
+  return result;
 }
 
 async function* sendMessageStream(message, devices = []) {
@@ -89,4 +73,4 @@ function setClientFactory(fn) {
   createClient = fn;
 }
 
-module.exports = { sendMessage, sendMessageStream, setEnv, setClientFactory };
+module.exports = { sendMessage, sendMessageStream, setEnv, setClientFactory, getEnv };

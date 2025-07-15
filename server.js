@@ -7,7 +7,7 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage, sendMessageStream } = require('./openaiClient');
+const { sendMessage, sendMessageStream, getEnv } = require('./openaiClient');
 const MCP = require('./mcp');
 const mcp = new MCP();
 
@@ -48,6 +48,24 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error('OpenAI request failed', err);
     res.status(500).json({ error: 'OpenAI request failed' });
+  }
+});
+
+app.post('/api/file', async (req, res) => {
+  const { name, content } = req.body || {};
+  if (!name || !content) {
+    console.log('POST /api/file missing file');
+    return res.status(400).json({ error: 'File is required' });
+  }
+  if (getEnv() === 'openai') {
+    return res.status(400).json({ error: 'File upload not supported in OpenAI mode' });
+  }
+  try {
+    console.log(`Received file ${name}`);
+    res.json({ reply: `Received file ${name}` });
+  } catch (err) {
+    console.error('File upload failed', err);
+    res.status(500).json({ error: 'File upload failed' });
   }
 });
 

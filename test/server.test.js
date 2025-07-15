@@ -20,9 +20,11 @@ beforeEach(() => {
 
 beforeEach(() => {
   createMock.mockReset();
-  createMock.mockResolvedValue({
-    choices: [{ message: { content: 'mock reply' } }]
-  });
+  async function* gen() {
+    yield { choices: [{ delta: { content: 'mock ' } }] };
+    yield { choices: [{ delta: { content: 'reply' } }] };
+  }
+  createMock.mockResolvedValue(gen());
 });
 
 describe('POST /api/chat', () => {
@@ -45,7 +47,7 @@ describe('POST /api/chat', () => {
     app = require('../server');
     const res = await request(app).post('/api/chat').send({ message: 'hi' });
     expect(res.statusCode).toBe(200);
-    expect(res.body.reply).toEqual(['device']);
+    expect(res.body.reply).toBe('device');
     expect(broadcast).toHaveBeenCalledWith('hi');
     expect(createMock).not.toHaveBeenCalled();
   });
@@ -115,6 +117,26 @@ describe('additional routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.reply).toBe('ok');
     expect(connectBluetooth).toHaveBeenCalledWith('AA:BB');
+  });
+
+  it('rejects file upload in openai mode', async () => {
+    const res = await request(app)
+      .post('/api/file')
+      .send({ name: 'a.txt', content: 'data' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('accepts file upload in ollama mode', async () => {
+    jest.resetModules();
+    ({ setEnv, setClientFactory } = require('../openaiClient'));
+    setEnv('ollama');
+    setClientFactory(() => openaiInstance);
+    app = require('../server');
+    const res = await request(app)
+      .post('/api/file')
+      .send({ name: 'a.txt', content: 'data' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toContain('Received file');
   });
 });
 

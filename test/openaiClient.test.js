@@ -25,6 +25,11 @@ beforeEach(() => {
 });
 
 test('sendMessage returns text from openai', async () => {
+  async function* gen() {
+    yield { choices: [{ delta: { content: 'unit ' } }] };
+    yield { choices: [{ delta: { content: 'reply' } }] };
+  }
+  createMock.mockResolvedValueOnce(gen());
   const reply = await sendMessage('hi');
   expect(reply).toBe('unit reply');
 });
@@ -41,7 +46,7 @@ test('sendMessage uses MCP when env is local', async () => {
   setEnv('local');
   const reply = await sendMessage('hi');
   expect(broadcast).toHaveBeenCalledWith('hi');
-  expect(reply).toEqual(['ok']);
+  expect(reply).toBe('ok');
 });
 
 
@@ -83,7 +88,12 @@ test('sendMessageStream uses MCP when env is local', async () => {
 
 test('sendMessage uses Ollama when env is ollama', async () => {
   setEnv('ollama');
-  fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ message: { content: 'hey' } }) });
+  const { Readable } = require('stream');
+  const body = Readable.from([
+    Buffer.from(JSON.stringify({ message: { content: 'he' } }) + '\n'),
+    Buffer.from(JSON.stringify({ message: { content: 'y' } }) + '\n')
+  ]);
+  fetch.mockResolvedValueOnce({ body });
   const reply = await sendMessage('hi');
   expect(fetch).toHaveBeenCalled();
   expect(reply).toBe('hey');
