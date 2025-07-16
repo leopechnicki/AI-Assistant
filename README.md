@@ -23,6 +23,10 @@ Use the **Stream** checkbox in the UI to receive incremental tokens. The server
 exposes a `/api/chat/stream` endpoint that streams responses using
 Server-Sent Events.
 
+## File Upload
+
+When running with **Ollama (Local)**, you can attach an image or text file in the chat UI. The file content is sent to `/api/file` and the server responds with a confirmation. Uploads are rejected when using OpenAI.
+
 ## Testing
 
 Run unit and integration tests with:
