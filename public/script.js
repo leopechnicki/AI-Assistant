@@ -83,6 +83,10 @@ function ChatApp() {
     }
   };
 
+  const shutdown = async () => {
+    await fetch('/api/shutdown', { method: 'POST' });
+  };
+
   const onKeyDown = e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -109,7 +113,12 @@ function ChatApp() {
         }),
         ' Stream'
       ),
-      React.createElement('button', { id: 'send', onClick: sendText }, 'Send')
+      React.createElement('button', { id: 'send', onClick: sendText }, 'Send'),
+      React.createElement(
+        'button',
+        { id: 'shutdown', onClick: shutdown },
+        'Shutdown'
+      )
     )
   );
 }

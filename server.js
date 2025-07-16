@@ -10,6 +10,7 @@ app.use(express.json({ limit: '2mb' }));
 const { sendMessage, sendMessageStream, getEnv } = require('./openaiClient');
 const MCP = require('./mcp');
 const mcp = new MCP();
+const { exec } = require('child_process');
 
 app.post('/api/chat/stream', async (req, res) => {
   const { message } = req.body;
@@ -84,6 +85,17 @@ app.post('/api/connect', async (req, res) => {
     console.error('Connection failed', err);
     res.status(500).json({ error: 'Connection failed' });
   }
+});
+
+app.post('/api/shutdown', (req, res) => {
+  exec('shutdown -h now', err => {
+    if (err) {
+      console.error('Shutdown failed', err);
+      return res.status(500).json({ error: 'Shutdown failed' });
+    }
+    console.log('Shutdown initiated');
+    res.json({ reply: 'Shutting down...' });
+  });
 });
 
 app.use(express.static('public'));

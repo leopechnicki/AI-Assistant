@@ -137,6 +137,30 @@ describe('additional routes', () => {
       .send({ name: 'a.txt', content: 'data' });
     expect(res.statusCode).toBe(200);
     expect(res.body.reply).toContain('Received file');
+
+  it('shuts down the server host', async () => {
+    const exec = jest.fn((cmd, cb) => cb(null));
+    jest.doMock('child_process', () => ({ exec }));
+    jest.resetModules();
+    ({ setClientFactory } = require('../openaiClient'));
+    setClientFactory(() => openaiInstance);
+    app = require('../server');
+    const res = await request(app).post('/api/shutdown');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toBe('Shutting down...');
+    expect(exec).toHaveBeenCalled();
+  });
+
+  it('returns 500 when shutdown fails', async () => {
+    const exec = jest.fn((cmd, cb) => cb(new Error('fail')));
+    jest.doMock('child_process', () => ({ exec }));
+    jest.resetModules();
+    ({ setClientFactory } = require('../openaiClient'));
+    setClientFactory(() => openaiInstance);
+    app = require('../server');
+    const res = await request(app).post('/api/shutdown');
+    expect(res.statusCode).toBe(500);
+    expect(exec).toHaveBeenCalled();
   });
 });
 
