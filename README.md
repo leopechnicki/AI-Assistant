@@ -9,12 +9,12 @@ This project is a simple chat application built with React that interacts with t
    npm install
    ```
 2. Provide your OpenAI API key via the `OPENAI_API_KEY` environment variable.
-3. (Optional) Set `OLLAMA_MODEL` to change the local model used by Ollama.
+3. (Optional) Set `OLLAMA_MODEL` to change the default model used by Ollama.
 4. Start the server using `nps` to choose the LLM environment:
    ```bash
    npx nps start
    ```
-   You'll be prompted to select **Local** (to use devices via MCP), **OpenAI**, or **Ollama**.
+   You'll be prompted to select **OpenAI** or **Ollama (Local)**, then choose a model (currently only **DeepSeek R1:7b**).
 5. Open `http://localhost:3000` in your browser.
 
 ## Streaming
@@ -22,6 +22,10 @@ This project is a simple chat application built with React that interacts with t
 Use the **Stream** checkbox in the UI to receive incremental tokens. The server
 exposes a `/api/chat/stream` endpoint that streams responses using
 Server-Sent Events.
+
+## File Upload
+
+When running with **Ollama (Local)**, you can attach an image or text file in the chat UI. The file content is sent to `/api/file` and the server responds with a confirmation. Uploads are rejected when using OpenAI.
 
 ## Testing
 

@@ -11,6 +11,7 @@ function ChatApp() {
   const [messages, setMessages] = React.useState([]);
   const [useStream, setUseStream] = React.useState(false);
   const inputRef = React.useRef(null);
+  const fileRef = React.useRef(null);
 
   const addMessage = (role, text) => {
     setMessages(prev => [...prev, { role, text }]);
@@ -18,8 +19,25 @@ function ChatApp() {
 
   const sendText = async () => {
     const input = inputRef.current;
+    const fileInput = fileRef.current;
     const text = input.value.trim();
-    if (!text) return;
+    const file = fileInput.files[0];
+    if (!text && !file) return;
+    if (file) {
+      const reader = new FileReader();
+      const data = await new Promise(r => { reader.onload = () => r(reader.result); });
+      reader.readAsDataURL(file);
+      addMessage('user', file.name);
+      fileInput.value = '';
+      const res = await fetch('/api/file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: file.name, content: data })
+      });
+      const dataRes = await res.json();
+      addMessage('assistant', dataRes.reply || dataRes.error);
+      return;
+    }
     addMessage('user', text);
     input.value = '';
     if (useStream) {
@@ -85,6 +103,7 @@ function ChatApp() {
       )
     ),
     React.createElement('div', { className: 'controls' },
+      React.createElement('input', { type: 'file', id: 'file', ref: fileRef, accept: '.txt,image/*' }),
       React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown }),
       React.createElement('label', null,
         React.createElement('input', {
