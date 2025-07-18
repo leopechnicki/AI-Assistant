@@ -128,8 +128,14 @@ async function sendMessage(message, devices = [], options = {}) {
 }
 
 async function* sendMessageStream(message, devices = [], options = {}) {
-  const reqEnv = options.env ?? env;
+  const reqEnv = options.env;
+  if (!reqEnv) {
+    throw new Error('Provider is required');
+  }
   const model = getModelForEnv(reqEnv);
+  if (!model && reqEnv !== 'local') {
+    throw new Error('Invalid provider');
+  }
 
   if (reqEnv === 'local') {
     const mcp = new MCP(devices);
