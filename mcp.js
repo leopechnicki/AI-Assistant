@@ -1,9 +1,6 @@
-const Bluetooth = require('./bluetooth');
-
 class MCP {
   constructor(devices = []) {
     this.devices = devices;
-    this.bluetooth = new Bluetooth();
   }
 
   async broadcast(message) {
@@ -20,9 +17,6 @@ class MCP {
     return results;
   }
 
-  async connectBluetooth(address) {
-    return this.bluetooth.connect(address);
-  }
 }
 
 module.exports = MCP;

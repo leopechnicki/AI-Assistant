@@ -102,22 +102,6 @@ describe('additional routes', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it('connects via bluetooth', async () => {
-    const connectBluetooth = jest.fn().mockResolvedValue('ok');
-    jest.doMock('../mcp', () => {
-      return jest.fn().mockImplementation(() => ({ connectBluetooth }));
-    });
-    jest.resetModules();
-    ({ setClientFactory } = require('../openaiClient'));
-    setClientFactory(() => openaiInstance);
-    app = require('../server');
-    const res = await request(app)
-      .post('/api/connect')
-      .send({ address: 'AA:BB' });
-    expect(res.statusCode).toBe(200);
-    expect(res.body.reply).toBe('ok');
-    expect(connectBluetooth).toHaveBeenCalledWith('AA:BB');
-  });
 
   it('rejects file upload in openai mode', async () => {
     const res = await request(app)

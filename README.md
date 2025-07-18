@@ -43,10 +43,6 @@ follow good conversational etiquette. Example system prompts:
 
 
 
-## Bluetooth via MCP
-
-The server can attempt to connect to a Bluetooth device using MCP. Send a `POST` request to `/api/connect` with a JSON body containing an `address` field.
-
 ## Node-RED Integration
 
 Import the supplied Node-RED flow JSON to quickly wire the assistant into your existing automation:
