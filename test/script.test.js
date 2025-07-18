@@ -3,7 +3,6 @@ const { setupChat } = require('../public/script');
 
 global.fetch = jest.fn(() =>
   Promise.resolve({
-    json: () => Promise.resolve({ models: ['m1'] }),
     body: { getReader: () => ({ read: () => Promise.resolve({ done: true }) }) }
   })
 );
@@ -18,19 +17,14 @@ beforeEach(() => {
 
 const flush = () => new Promise(r => setTimeout(r,0));
 
-test('default env is ollama', async () => {
+test('input disabled until provider selected', async () => {
   setupChat(document);
   await flush();
-  expect(document.getElementById('env').value).toBe('ollama');
-});
-
-
-test('model list failure leaves only placeholder', async () => {
-  fetch.mockResolvedValueOnce({ json: () => Promise.reject(new Error('fail')) });
-  setupChat(document);
+  const env = document.getElementById('env');
+  expect(env.value).toBe('');
+  expect(document.getElementById('input').disabled).toBe(true);
+  env.value = 'openai';
+  env.dispatchEvent(new Event('change', { bubbles: true }));
   await flush();
-  document.getElementById('env').dispatchEvent(new Event('change', { bubbles: true }));
-  await flush();
-  await flush();
-  expect(document.getElementById('model').options.length).toBeGreaterThanOrEqual(1);
+  expect(document.getElementById('input').disabled).toBe(false);
 });

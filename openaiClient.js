@@ -1,10 +1,8 @@
 const OpenAI = require('openai');
 const MCP = require('./mcp');
 const axios = require('axios');
-const DEFAULT_OLLAMA_MODEL = 'deepseek-r1:7b';
-const { promisify } = require('util');
-const { exec } = require('child_process');
-const execAsync = promisify(exec);
+const DEFAULT_OLLAMA_MODEL = 'deepseek-r1:8b';
+const DEFAULT_OPENAI_MODEL = 'gpt-3.5-turbo';
 
 let createClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -115,6 +113,12 @@ function getEnv() {
   return env;
 }
 
+function getModelForEnv(targetEnv) {
+  if (targetEnv === 'ollama') return DEFAULT_OLLAMA_MODEL;
+  if (targetEnv === 'openai') return DEFAULT_OPENAI_MODEL;
+  return undefined;
+}
+
 async function sendMessage(message, devices = [], options = {}) {
   let result = '';
   for await (const part of sendMessageStream(message, devices, options)) {
@@ -125,7 +129,7 @@ async function sendMessage(message, devices = [], options = {}) {
 
 async function* sendMessageStream(message, devices = [], options = {}) {
   const reqEnv = options.env ?? env;
-  const reqModel = options.model;
+  const model = getModelForEnv(reqEnv);
 
   if (reqEnv === 'local') {
     const mcp = new MCP(devices);
@@ -142,7 +146,7 @@ async function* sendMessageStream(message, devices = [], options = {}) {
     let response;
     try {
       response = await axios.post('http://localhost:11434/api/chat', {
-        model: reqModel || process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+        model,
         messages: currentMessages,
         tools,
         stream: false
@@ -166,7 +170,7 @@ async function* sendMessageStream(message, devices = [], options = {}) {
       }
       currentMessages.push(...toolOutputs);
       const final = await axios.post('http://localhost:11434/api/chat', {
-        model: reqModel || process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+        model,
         messages: currentMessages,
         stream: false
       });
@@ -181,7 +185,7 @@ async function* sendMessageStream(message, devices = [], options = {}) {
   let stream;
   try {
     stream = await openai.chat.completions.create({
-      model: reqModel || 'gpt-3.5-turbo',
+      model,
       messages: [{ role: 'user', content: message }],
       stream: true
     });
@@ -211,7 +215,7 @@ async function chatWithOllamaTools(userMessage, history = []) {
   currentMessages.push({ role: 'user', content: userMessage });
 
   const response = await axios.post('http://localhost:11434/api/chat', {
-    model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+    model: getModelForEnv('ollama'),
     messages: currentMessages,
     tools,
     stream: false
@@ -232,7 +236,7 @@ async function chatWithOllamaTools(userMessage, history = []) {
     }
     currentMessages.push(...toolOutputs);
     const final = await axios.post('http://localhost:11434/api/chat', {
-      model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+      model: getModelForEnv('ollama'),
       messages: currentMessages,
       stream: false
     });
@@ -243,25 +247,8 @@ async function chatWithOllamaTools(userMessage, history = []) {
 }
 
 async function listModels(targetEnv) {
-  if (targetEnv === 'ollama') {
-    try {
-      const { stdout } = await execAsync('ollama list --json');
-      const parsed = JSON.parse(stdout);
-      return parsed.models.map(m => m.name);
-    } catch (err) {
-      throw new Error('Failed to list Ollama models');
-    }
-  }
-  if (targetEnv === 'openai') {
-    try {
-      const openai = createClient();
-      const res = await openai.models.list();
-      return res.data.map(m => m.id);
-    } catch (err) {
-      throw new Error('Failed to list OpenAI models');
-    }
-  }
-  return [];
+  const model = getModelForEnv(targetEnv);
+  return model ? [model] : [];
 }
 
 module.exports = { sendMessage, sendMessageStream, setEnv, setClientFactory, getEnv, chatWithOllamaTools, listModels };

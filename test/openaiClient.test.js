@@ -37,6 +37,11 @@ test('sendMessage returns text from openai', async () => {
   }
   createMock.mockResolvedValueOnce(gen());
   const reply = await sendMessage('hi', [], { env: 'openai' });
+  expect(createMock).toHaveBeenCalledWith({
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: 'hi' }],
+    stream: true
+  });
   expect(reply).toBe('unit reply');
 });
 
@@ -69,6 +74,11 @@ test('sendMessageStream yields tokens', async () => {
   for await (const p of sendMessageStream('hi', [], { env: 'openai' })) {
     parts.push(p);
   }
+  expect(createMock).toHaveBeenCalledWith({
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: 'hi' }],
+    stream: true
+  });
   expect(parts.join('')).toBe('hello');
 });
 
@@ -93,6 +103,7 @@ test('sendMessage uses Ollama when env is ollama', async () => {
   const reply = await sendMessage('hi', [], { env: 'ollama' });
   expect(postMock).toHaveBeenCalled();
   expect(postMock.mock.calls[0][0]).toBe('http://localhost:11434/api/chat');
+  expect(postMock.mock.calls[0][1].model).toBe('deepseek-r1:8b');
   expect(postMock.mock.calls[0][1].tools).toBeDefined();
   expect(postMock.mock.calls[0][1].tools.find(t => t.function.name === 'search_web')).toBeTruthy();
   expect(reply).toBe('hey');
@@ -105,6 +116,7 @@ test('sendMessageStream uses Ollama when env is ollama', async () => {
     parts.push(p);
   }
   expect(postMock).toHaveBeenCalled();
+  expect(postMock.mock.calls[0][1].model).toBe('deepseek-r1:8b');
   expect(postMock.mock.calls[0][1].tools.find(t => t.function.name === 'search_web')).toBeTruthy();
   expect(parts.join('')).toBe('hello');
 });

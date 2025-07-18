@@ -157,19 +157,13 @@ describe('GET /api/models', () => {
     app = require('../server');
   });
 
-  it('lists models for openai', async () => {
-    const list = jest.fn().mockResolvedValue({ data: [{ id: 'a' }] });
-    openaiInstance.models = { list };
-    const res = await request(app).get('/api/models').query({ env: 'openai' });
-    expect(res.statusCode).toBe(200);
-    expect(res.body.models).toContain('a');
-  });
-
-  it('handles errors', async () => {
-    const list = jest.fn().mockRejectedValue(new Error('fail'));
-    openaiInstance.models = { list };
-    const res = await request(app).get('/api/models').query({ env: 'openai' });
-    expect(res.statusCode).toBe(500);
+  it('returns default models for each provider', async () => {
+    const resOpen = await request(app).get('/api/models').query({ env: 'openai' });
+    expect(resOpen.statusCode).toBe(200);
+    expect(resOpen.body.models).toContain('gpt-3.5-turbo');
+    const resOllama = await request(app).get('/api/models').query({ env: 'ollama' });
+    expect(resOllama.statusCode).toBe(200);
+    expect(resOllama.body.models).toContain('deepseek-r1:8b');
   });
 });
 
