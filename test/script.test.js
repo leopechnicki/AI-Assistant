@@ -3,8 +3,15 @@
 const { setupChat } = require('../public/script');
 
 global.fetch = jest.fn(() =>
-  Promise.resolve({ json: () => Promise.resolve({ reply: 'server reply' }) })
+  Promise.resolve({
+    json: () => Promise.resolve({ reply: 'server reply' }),
+    body: { getReader: () => ({ read: () => Promise.resolve({ done: true }) }) }
+  })
 );
+
+global.TextDecoder = class {
+  decode(v) { return typeof v === 'string' ? v : Buffer.from(v).toString(); }
+};
 
 beforeEach(() => {
   document.body.innerHTML = `<div id="app"></div>`;
@@ -19,7 +26,7 @@ test('pressing Enter sends the message', async () => {
   const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
   input.dispatchEvent(event);
   await new Promise(r => setTimeout(r, 0));
-  expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({ method: 'POST' }));
+  expect(fetch).toHaveBeenCalledWith('/api/chat/stream', expect.objectContaining({ method: 'POST' }));
 });
 
 test('clicking shutdown sends request', async () => {

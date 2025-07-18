@@ -12,6 +12,10 @@ const MCP = require('./mcp');
 const mcp = new MCP();
 const { exec } = require('child_process');
 
+function getShutdownCommand() {
+  return process.platform === 'win32' ? 'shutdown /s /t 0' : 'shutdown -h now';
+}
+
 app.post('/api/chat/stream', async (req, res) => {
   const { message } = req.body;
   if (!message) {
@@ -88,7 +92,7 @@ app.post('/api/connect', async (req, res) => {
 });
 
 app.post('/api/shutdown', (req, res) => {
-  exec('shutdown -h now', err => {
+  exec(getShutdownCommand(), err => {
     if (err) {
       console.error('Shutdown failed', err);
       return res.status(500).json({ error: 'Shutdown failed' });
