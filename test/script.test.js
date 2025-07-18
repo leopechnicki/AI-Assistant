@@ -81,3 +81,16 @@ test('clicking update triggers repository pull', async () => {
   await new Promise(r => setTimeout(r, 0));
   expect(fetch).toHaveBeenCalledWith('/api/update', expect.objectContaining({ method: 'POST' }));
 });
+
+test('new tab starts with empty messages', async () => {
+  setupChat(document);
+  await new Promise(r => setTimeout(r, 0));
+  const input = document.getElementById('input');
+  input.value = 'hi';
+  document.getElementById('send').click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(document.querySelectorAll('#messages .msg').length).toBeGreaterThan(0);
+  document.getElementById('add-tab').click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(document.querySelectorAll('#messages .msg').length).toBe(0);
+});
