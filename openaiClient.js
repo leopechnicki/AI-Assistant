@@ -1,8 +1,11 @@
 const OpenAI = require('openai');
 const MCP = require('./mcp');
 const axios = require('axios');
-const DEFAULT_OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'deepseek-r1:8b';
-const DEFAULT_OPENAI_MODEL = 'gpt-3.5-turbo';
+const fs = require('fs');
+const path = require('path');
+const DEFAULT_OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'MFDoom/deepseek-r1-tool-calling:8b';
+const DEFAULT_OPENAI_MODEL = 'gpt-3.5-turbo-1106';
+const OLLAMA_TEMPLATE = fs.readFileSync(path.join(__dirname, 'templates', 'deepseek-tool.jinja'), 'utf8');
 
 let createClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -105,6 +108,45 @@ const availableFunctions = {
   }
 };
 
+async function executeToolCalls(provider, currentMessages, msg, model) {
+  if (!msg.tool_calls || !msg.tool_calls.length) {
+    return msg.content || '';
+  }
+  const toolOutputs = [];
+  for (const call of msg.tool_calls) {
+    const fn = availableFunctions[call.function.name];
+    const args = typeof call.function.arguments === 'string'
+      ? JSON.parse(call.function.arguments)
+      : call.function.arguments;
+    if (fn) {
+      const out = await fn(...Object.values(args));
+      toolOutputs.push({ role: 'tool', content: JSON.stringify(out), tool_call_id: call.id });
+    } else {
+      toolOutputs.push({ role: 'tool', content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }), tool_call_id: call.id });
+    }
+  }
+  currentMessages.push(...toolOutputs);
+  if (provider === 'ollama') {
+    const final = await axios.post('http://localhost:11434/api/chat', {
+      model,
+      messages: currentMessages,
+      stream: false,
+      template: OLLAMA_TEMPLATE
+    });
+    return final.data.message.content;
+  }
+
+  const openai = createClient();
+  const final = await openai.chat.completions.create({
+    model,
+    messages: currentMessages,
+    tools,
+    tool_choice: 'auto',
+    stream: false
+  });
+  return final.choices[0].message.content;
+}
+
 function setEnv(newEnv) {
   env = newEnv;
 }
@@ -155,60 +197,37 @@ async function* sendMessageStream(message, devices = [], options = {}) {
         model,
         messages: currentMessages,
         tools,
-        stream: false
+        stream: false,
+        template: OLLAMA_TEMPLATE
       });
     } catch (err) {
       const msg = err.response?.data?.error || err.message;
       throw new Error(`Ollama request failed: ${msg}`);
     }
 
-    let msg = response.data.message;
-    if (msg.tool_calls && msg.tool_calls.length > 0) {
-      const toolOutputs = [];
-      for (const call of msg.tool_calls) {
-        const fn = availableFunctions[call.function.name];
-        const args = call.function.arguments;
-        if (fn) {
-          const out = await fn(...Object.values(args));
-          toolOutputs.push({ role: 'tool', content: JSON.stringify(out), tool_call_id: call.id });
-        } else {
-          toolOutputs.push({ role: 'tool', content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }), tool_call_id: call.id });
-        }
-      }
-      currentMessages.push(...toolOutputs);
-      let final;
-      try {
-        final = await axios.post('http://localhost:11434/api/chat', {
-          model,
-          messages: currentMessages,
-          stream: false
-        });
-      } catch (err) {
-        const msgErr = err.response?.data?.error || err.message;
-        throw new Error(`Ollama request failed: ${msgErr}`);
-      }
-      msg = final.data.message;
-    }
-
-    if (msg.content) yield msg.content;
+    const msg = response.data.message;
+    const finalContent = await executeToolCalls('ollama', currentMessages, msg, model);
+    if (finalContent) yield finalContent;
     return;
   }
 
-  const openai = createClient();
-  let stream;
+  const currentMessages = [{ role: 'user', content: message }];
+  let result;
   try {
-    stream = await openai.chat.completions.create({
+    const openai = createClient();
+    result = await openai.chat.completions.create({
       model,
-      messages: [{ role: 'user', content: message }],
-      stream: true
+      messages: currentMessages,
+      tools,
+      tool_choice: 'auto',
+      stream: false
     });
   } catch (err) {
     throw new Error('OpenAI request failed');
   }
-  for await (const part of stream) {
-    const token = part.choices[0]?.delta?.content;
-    if (token) yield token;
-  }
+  const msg = result.choices[0].message;
+  const finalContent = await executeToolCalls('openai', currentMessages, msg, model);
+  if (finalContent) yield finalContent;
 }
 
 function setClientFactory(fn) {
@@ -233,42 +252,16 @@ async function chatWithOllamaTools(userMessage, history = []) {
       model: getModelForEnv('ollama'),
       messages: currentMessages,
       tools,
-      stream: false
+      stream: false,
+      template: OLLAMA_TEMPLATE
     });
   } catch (err) {
     const msg = err.response?.data?.error || err.message;
     throw new Error(`Ollama request failed: ${msg}`);
   }
 
-  let msg = response.data.message;
-  if (msg.tool_calls && msg.tool_calls.length > 0) {
-    const toolOutputs = [];
-    for (const call of msg.tool_calls) {
-      const fn = availableFunctions[call.function.name];
-      const args = call.function.arguments;
-      if (fn) {
-        const out = await fn(...Object.values(args));
-        toolOutputs.push({ role: 'tool', content: JSON.stringify(out), tool_call_id: call.id });
-      } else {
-        toolOutputs.push({ role: 'tool', content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }), tool_call_id: call.id });
-      }
-    }
-    currentMessages.push(...toolOutputs);
-    let final;
-    try {
-      final = await axios.post('http://localhost:11434/api/chat', {
-        model: getModelForEnv('ollama'),
-        messages: currentMessages,
-        stream: false
-      });
-    } catch (err) {
-      const msgErr = err.response?.data?.error || err.message;
-      throw new Error(`Ollama request failed: ${msgErr}`);
-    }
-    return final.data.message.content;
-  }
-
-  return msg.content;
+  const msg = response.data.message;
+  return executeToolCalls('ollama', currentMessages, msg, getModelForEnv('ollama'));
 }
 
 async function listModels(targetEnv) {

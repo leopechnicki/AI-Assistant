@@ -20,11 +20,7 @@ beforeEach(() => {
 
 beforeEach(() => {
   createMock.mockReset();
-  async function* gen() {
-    yield { choices: [{ delta: { content: 'mock ' } }] };
-    yield { choices: [{ delta: { content: 'reply' } }] };
-  }
-  createMock.mockResolvedValue(gen());
+  createMock.mockResolvedValue({ choices: [{ message: { content: 'mock reply' } }] });
 });
 
 describe('POST /api/chat', () => {
@@ -77,18 +73,13 @@ describe('POST /api/chat', () => {
 
 describe('POST /api/chat/stream', () => {
   it('streams reply', async () => {
-    async function* gen() {
-      yield { choices: [{ delta: { content: 'a' } }] };
-      yield { choices: [{ delta: { content: 'b' } }] };
-    }
-    createMock.mockResolvedValueOnce(gen());
+    createMock.mockResolvedValueOnce({ choices: [{ message: { content: 'ab' } }] });
     const res = await request(app)
       .post('/api/chat/stream')
       .send({ message: 'hi', env: 'openai' });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/event-stream/);
-    expect(res.text).toContain('data: a');
-    expect(res.text).toContain('data: b');
+    expect(res.text).toContain('data: ab');
   });
 
   it('requires provider', async () => {
@@ -172,10 +163,10 @@ describe('GET /api/models', () => {
   it('returns default models for each provider', async () => {
     const resOpen = await request(app).get('/api/models').query({ env: 'openai' });
     expect(resOpen.statusCode).toBe(200);
-    expect(resOpen.body.models).toContain('gpt-3.5-turbo');
+    expect(resOpen.body.models).toContain('gpt-3.5-turbo-1106');
     const resOllama = await request(app).get('/api/models').query({ env: 'ollama' });
     expect(resOllama.statusCode).toBe(200);
-    expect(resOllama.body.models).toContain('deepseek-r1:8b');
+    expect(resOllama.body.models).toContain('MFDoom/deepseek-r1-tool-calling:8b');
   });
 });
 

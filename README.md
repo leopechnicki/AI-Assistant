@@ -16,8 +16,8 @@ This project is a simple chat application built with React that interacts with t
    The server starts immediately using the environment variables you set.
 4. Open `http://localhost:3000` in your browser.
 5. Open the chat UI and pick **OpenAI** or **Ollama** in the provider drop-down before sending any message. The input box and Send button remain disabled until a provider is chosen.
-   - `OpenAI` always uses the fixed `gpt-3.5-turbo` model.
-   - `Ollama` always uses the fixed `deepseek-r1:8b` model.
+   - `OpenAI` always uses the fixed `gpt-3.5-turbo-1106` model.
+   - `Ollama` always uses the fixed `MFDoom/deepseek-r1-tool-calling:8b` model with a Jinja template.
    - There is no automatic fallback between providers; if a request fails you must select the other provider manually.
 
 If a request to the chosen provider fails you'll receive an error message in the chat window. Simply switch providers using the drop-down and resend your message.
@@ -80,3 +80,5 @@ functions. Two example tools are provided:
   email send.
 
 Use the gear icon in the top right to access **Update** and **Shutdown** actions. The **Update** option triggers `/api/update` and performs a `git pull` so you can update the repository from the browser.
+
+The Ollama backend uses the official Jinja template from the `deepseek-r1-tool-calling` repository to format prompts. Tool responses are parsed and executed server-side before the final reply is generated.

@@ -1,0 +1,6 @@
+{% if system_prompt %}{{ system_prompt }}
+
+{% endif %}{% for message in messages %}
+{{ message.role }}: {{ message.content }}
+{% endfor %}
+assistant:
