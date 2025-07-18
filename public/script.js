@@ -1,10 +1,10 @@
-let React, ReactDOM;
+let React, createRoot;
 if (typeof require !== 'undefined') {
   React = require('react');
-  ReactDOM = require('react-dom');
+  ({ createRoot } = require('react-dom/client'));
 } else {
   React = window.React;
-  ReactDOM = window.ReactDOM;
+  createRoot = window.ReactDOM.createRoot;
 }
 
 function cn() {
@@ -151,8 +151,9 @@ function ChatApp() {
 
 function setupChat(doc = document) {
   const container = doc.getElementById('app');
-  ReactDOM.render(React.createElement(ChatApp), container);
-  return { container };
+  const root = createRoot(container);
+  root.render(React.createElement(ChatApp));
+  return { container, root };
 }
 
 if (typeof document !== 'undefined') {
