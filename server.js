@@ -16,6 +16,11 @@ function getShutdownCommand() {
   return process.platform === 'win32' ? 'shutdown /s /t 0' : 'shutdown -h now';
 }
 
+function isLocal(req) {
+  const ip = req.ip || (req.connection && req.connection.remoteAddress) || '';
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+}
+
 app.post('/api/chat/stream', async (req, res) => {
   const { message } = req.body;
   if (!message) {
@@ -92,6 +97,10 @@ app.post('/api/connect', async (req, res) => {
 });
 
 app.post('/api/shutdown', (req, res) => {
+  if (!isLocal(req)) {
+    console.log(`Unauthorized shutdown attempt from ${req.ip || req.connection && req.connection.remoteAddress}`);
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   exec(getShutdownCommand(), err => {
     if (err) {
       console.error('Shutdown failed', err);
@@ -99,6 +108,17 @@ app.post('/api/shutdown', (req, res) => {
     }
     console.log('Shutdown initiated');
     res.json({ reply: 'Shutting down...' });
+  });
+});
+
+app.post('/api/update', (req, res) => {
+  exec('git pull', (err, stdout, stderr) => {
+    if (err) {
+      console.error('Update failed', err);
+      return res.status(500).json({ error: 'Update failed' });
+    }
+    console.log(stdout);
+    res.json({ reply: stdout.trim() });
   });
 });
 
