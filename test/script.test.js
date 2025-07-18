@@ -39,3 +39,32 @@ test('clicking shutdown sends request', async () => {
   expect(confirm).toHaveBeenCalledWith('Are you sure\u2026?');
   expect(fetch).toHaveBeenCalledWith('/api/shutdown', expect.objectContaining({ method: 'POST' }));
 });
+
+test('clicking reset starts a new conversation', async () => {
+  setupChat(document);
+  await new Promise(r => setTimeout(r, 0));
+  const input = document.getElementById('input');
+  input.value = 'hi';
+  document.getElementById('send').click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(document.querySelectorAll('#messages .msg').length).toBeGreaterThan(0);
+  const reset = document.getElementById('reset');
+  reset.click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(document.querySelectorAll('#messages .msg').length).toBe(0);
+});
+
+test('clicking clear removes messages with confirm', async () => {
+  setupChat(document);
+  await new Promise(r => setTimeout(r, 0));
+  const input = document.getElementById('input');
+  input.value = 'hi';
+  document.getElementById('send').click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(document.querySelectorAll('#messages .msg').length).toBeGreaterThan(0);
+  const clear = document.getElementById('clear');
+  clear.click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(confirm).toHaveBeenCalledWith('Delete all messages?');
+  expect(document.querySelectorAll('#messages .msg').length).toBe(0);
+});

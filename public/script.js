@@ -117,6 +117,15 @@ function ChatApp() {
     await fetch('/api/shutdown', { method: 'POST' });
   };
 
+  const resetConversation = () => {
+    setMessages([]);
+  };
+
+  const clearMessages = () => {
+    if (!confirm('Delete all messages?')) return;
+    setMessages([]);
+  };
+
   const onKeyDown = e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -169,6 +178,8 @@ function ChatApp() {
       ),
       React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm' }),
       React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
+      React.createElement(Button, { id: 'reset', onClick: resetConversation, className: 'bg-yellow-600 hover:bg-yellow-600/90' }, 'New'),
+      React.createElement(Button, { id: 'clear', onClick: clearMessages, className: 'bg-gray-600 hover:bg-gray-600/90' }, 'Clear'),
       React.createElement(
         Button,
         { id: 'shutdown', onClick: shutdown, className: 'bg-red-600 hover:bg-red-600/90' },
