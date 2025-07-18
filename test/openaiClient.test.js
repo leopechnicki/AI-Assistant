@@ -24,6 +24,7 @@ let sendMessage, sendMessageStream, setClientFactory;
 
 beforeEach(() => {
   jest.resetModules();
+  process.env.OLLAMA_MODEL = 'deepseek-r1:8b';
   axios = require('axios');
   postMock = axios.post;
   ({ sendMessage, sendMessageStream, setClientFactory } = require('../openaiClient'));
