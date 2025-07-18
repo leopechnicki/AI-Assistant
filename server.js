@@ -7,7 +7,7 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage, sendMessageStream, getEnv, chatWithOllamaTools } = require('./openaiClient');
+const { sendMessage, sendMessageStream, getEnv } = require('./openaiClient');
 const { exec } = require('child_process');
 
 function getShutdownCommand() {
@@ -20,7 +20,7 @@ function isLocal(req) {
 }
 
 app.post('/api/chat/stream', async (req, res) => {
-  const { message } = req.body;
+  const { message, env, model } = req.body;
   if (!message) {
     console.log('POST /api/chat/stream missing message');
     return res.status(400).json({ error: 'Message is required' });
@@ -31,7 +31,7 @@ app.post('/api/chat/stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.flushHeaders();
-    for await (const chunk of sendMessageStream(message)) {
+    for await (const chunk of sendMessageStream(message, [], { env, model })) {
       res.write(`data: ${chunk}\n\n`);
     }
     res.write('data: [DONE]\n\n');
@@ -43,16 +43,14 @@ app.post('/api/chat/stream', async (req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-  const { message } = req.body;
+  const { message, env, model } = req.body;
   if (!message) {
     console.log('POST /api/chat missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
   try {
     console.log(`POST /api/chat: ${message}`);
-    const reply = getEnv() === 'ollama'
-      ? await chatWithOllamaTools(message)
-      : await sendMessage(message);
+    const reply = await sendMessage(message, [], { env, model });
     console.log(`reply: ${reply}`);
     res.json({ reply });
   } catch (err) {

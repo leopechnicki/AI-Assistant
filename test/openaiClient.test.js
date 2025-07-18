@@ -20,13 +20,13 @@ beforeEach(() => {
   postMock.mockReset();
 });
 
-let sendMessage, sendMessageStream, setEnv, setClientFactory;
+let sendMessage, sendMessageStream, setClientFactory;
 
 beforeEach(() => {
   jest.resetModules();
   axios = require('axios');
   postMock = axios.post;
-  ({ sendMessage, sendMessageStream, setEnv, setClientFactory } = require('../openaiClient'));
+  ({ sendMessage, sendMessageStream, setClientFactory } = require('../openaiClient'));
   setClientFactory(() => openaiInstance);
 });
 
@@ -36,21 +36,19 @@ test('sendMessage returns text from openai', async () => {
     yield { choices: [{ delta: { content: 'reply' } }] };
   }
   createMock.mockResolvedValueOnce(gen());
-  const reply = await sendMessage('hi');
+  const reply = await sendMessage('hi', [], { env: 'openai' });
   expect(reply).toBe('unit reply');
 });
 
 test('sendMessage uses MCP when env is local', async () => {
-  setEnv('local');
   const broadcast = jest.fn().mockResolvedValue(['ok']);
   jest.doMock('../mcp', () => {
     return jest.fn().mockImplementation(() => ({ broadcast }));
   });
   jest.resetModules();
-  ({ sendMessage, setEnv, setClientFactory } = require('../openaiClient'));
+  ({ sendMessage, setClientFactory } = require('../openaiClient'));
   setClientFactory(() => openaiInstance);
-  setEnv('local');
-  const reply = await sendMessage('hi');
+  const reply = await sendMessage('hi', [], { env: 'local' });
   expect(broadcast).toHaveBeenCalledWith('hi');
   expect(reply).toBe('ok');
 });
@@ -58,7 +56,7 @@ test('sendMessage uses MCP when env is local', async () => {
 
 test('sendMessage throws when openai fails', async () => {
   createMock.mockRejectedValueOnce(new Error('fail'));
-  await expect(sendMessage('hi')).rejects.toThrow('fail');
+  await expect(sendMessage('hi', [], { env: 'openai' })).rejects.toThrow('fail');
 });
 
 test('sendMessageStream yields tokens', async () => {
@@ -68,24 +66,22 @@ test('sendMessageStream yields tokens', async () => {
   }
   createMock.mockResolvedValueOnce(gen());
   const parts = [];
-  for await (const p of sendMessageStream('hi')) {
+  for await (const p of sendMessageStream('hi', [], { env: 'openai' })) {
     parts.push(p);
   }
   expect(parts.join('')).toBe('hello');
 });
 
 test('sendMessageStream uses MCP when env is local', async () => {
-  setEnv('local');
   const broadcast = jest.fn().mockResolvedValue(['ok']);
   jest.doMock('../mcp', () => {
     return jest.fn().mockImplementation(() => ({ broadcast }));
   });
   jest.resetModules();
-  ({ sendMessageStream, setEnv, setClientFactory } = require('../openaiClient'));
+  ({ sendMessageStream, setClientFactory } = require('../openaiClient'));
   setClientFactory(() => openaiInstance);
-  setEnv('local');
   const parts = [];
-  for await (const p of sendMessageStream('hi')) {
+  for await (const p of sendMessageStream('hi', [], { env: 'local' })) {
     parts.push(p);
   }
   expect(broadcast).toHaveBeenCalledWith('hi');
@@ -93,9 +89,8 @@ test('sendMessageStream uses MCP when env is local', async () => {
 });
 
 test('sendMessage uses Ollama when env is ollama', async () => {
-  setEnv('ollama');
   postMock.mockResolvedValueOnce({ data: { message: { content: 'hey' } } });
-  const reply = await sendMessage('hi');
+  const reply = await sendMessage('hi', [], { env: 'ollama' });
   expect(postMock).toHaveBeenCalled();
   expect(postMock.mock.calls[0][0]).toBe('http://localhost:11434/api/chat');
   expect(postMock.mock.calls[0][1].tools).toBeDefined();
@@ -104,10 +99,9 @@ test('sendMessage uses Ollama when env is ollama', async () => {
 });
 
 test('sendMessageStream uses Ollama when env is ollama', async () => {
-  setEnv('ollama');
   postMock.mockResolvedValueOnce({ data: { message: { content: 'hello' } } });
   const parts = [];
-  for await (const p of sendMessageStream('hi')) {
+  for await (const p of sendMessageStream('hi', [], { env: 'ollama' })) {
     parts.push(p);
   }
   expect(postMock).toHaveBeenCalled();

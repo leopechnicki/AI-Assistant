@@ -28,7 +28,10 @@ test('pressing Enter sends the message', async () => {
   const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
   input.dispatchEvent(event);
   await new Promise(r => setTimeout(r, 0));
-  expect(fetch).toHaveBeenCalledWith('/api/chat/stream', expect.objectContaining({ method: 'POST' }));
+  const [url, options] = fetch.mock.calls[0];
+  expect(url).toBe('/api/chat/stream');
+  const body = JSON.parse(options.body);
+  expect(body).toEqual({ message: 'hello', env: 'openai', model: '' });
 });
 
 test('clicking shutdown sends request', async () => {
