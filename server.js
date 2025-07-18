@@ -8,8 +8,6 @@ const app = express();
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
 const { sendMessage, sendMessageStream, getEnv, chatWithOllamaTools } = require('./openaiClient');
-const MCP = require('./mcp');
-const mcp = new MCP();
 const { exec } = require('child_process');
 
 function getShutdownCommand() {
@@ -78,23 +76,6 @@ app.post('/api/file', async (req, res) => {
   } catch (err) {
     console.error('File upload failed', err);
     res.status(500).json({ error: 'File upload failed' });
-  }
-});
-
-app.post('/api/connect', async (req, res) => {
-  const { address } = req.body;
-  if (!address) {
-    console.log('POST /api/connect missing address');
-    return res.status(400).json({ error: 'Address is required' });
-  }
-  try {
-    console.log(`Connecting to ${address}`);
-    const result = await mcp.connectBluetooth(address);
-    console.log('connected');
-    res.json({ reply: result });
-  } catch (err) {
-    console.error('Connection failed', err);
-    res.status(500).json({ error: 'Connection failed' });
   }
 });
 
