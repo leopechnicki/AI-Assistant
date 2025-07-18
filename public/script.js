@@ -42,21 +42,32 @@ function formatText(text) {
 }
 
 function ChatApp() {
-  const [messages, setMessages] = React.useState([]);
+  const [tabs, setTabs] = React.useState([
+    { messages: [], env: 'openai', model: '' }
+  ]);
+  const [activeTab, setActiveTab] = React.useState(0);
   const inputRef = React.useRef(null);
   const fileRef = React.useRef(null);
   const envRef = React.useRef(null);
   const modelRef = React.useRef(null);
   const messagesRef = React.useRef(null);
 
+  const currentTab = tabs[activeTab];
+
   const addMessage = (role, text) => {
-    setMessages(prev => [...prev, { role, text }]);
+    setTabs(prev => {
+      const copy = [...prev];
+      const tab = { ...copy[activeTab] };
+      tab.messages = [...tab.messages, { role, text }];
+      copy[activeTab] = tab;
+      return copy;
+    });
   };
 
   React.useEffect(() => {
     const el = messagesRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+  }, [currentTab.messages]);
 
   const sendText = async () => {
     const input = inputRef.current;
@@ -83,6 +94,11 @@ function ChatApp() {
     input.value = '';
     const env = envRef.current.value;
     const model = modelRef.current.value;
+    setTabs(prev => {
+      const copy = [...prev];
+      copy[activeTab] = { ...copy[activeTab], env, model };
+      return copy;
+    });
     const res = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -93,7 +109,7 @@ function ChatApp() {
     let buffer = '';
     let current = '';
     addMessage('assistant', '');
-    const idx = messages.length + 1;
+    const idx = currentTab.messages.length + 1;
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -106,15 +122,49 @@ function ChatApp() {
           const data = line.slice(5).trim();
           if (data === '[DONE]') continue;
           current += data + ' ';
-          setMessages(prev => {
+          setTabs(prev => {
             const copy = [...prev];
-            copy[idx] = { role: 'assistant', text: current };
+            const tab = { ...copy[activeTab] };
+            const msgs = [...tab.messages];
+            msgs[idx] = { role: 'assistant', text: current };
+            tab.messages = msgs;
+            copy[activeTab] = tab;
             return copy;
           });
         }
       }
     }
   };
+
+  const switchTab = idx => {
+    setTabs(prev => {
+      const copy = [...prev];
+      copy[activeTab] = { ...copy[activeTab], env: envRef.current.value, model: modelRef.current.value };
+      return copy;
+    });
+    setActiveTab(idx);
+  };
+
+  const addTab = () => {
+    setTabs(prev => [...prev, { messages: [], env: 'openai', model: '' }]);
+    setActiveTab(tabs.length);
+  };
+
+  const closeTab = idx => {
+    if (tabs.length === 1) return;
+    setTabs(prev => prev.filter((_, i) => i !== idx));
+    setActiveTab(prev => {
+      if (idx < prev) return prev - 1;
+      if (idx === prev) return idx > 0 ? idx - 1 : 0;
+      return prev;
+    });
+  };
+
+  React.useEffect(() => {
+    if (!envRef.current || !modelRef.current) return;
+    envRef.current.value = tabs[activeTab].env;
+    modelRef.current.value = tabs[activeTab].model;
+  }, [activeTab, tabs]);
 
   const shutdown = async () => {
     if (!confirm('Are you sure…?')) return;
@@ -128,12 +178,20 @@ function ChatApp() {
   };
 
   const resetConversation = () => {
-    setMessages([]);
+    setTabs(prev => {
+      const copy = [...prev];
+      copy[activeTab] = { ...copy[activeTab], messages: [] };
+      return copy;
+    });
   };
 
   const clearMessages = () => {
     if (!confirm('Delete all messages?')) return;
-    setMessages([]);
+    setTabs(prev => {
+      const copy = [...prev];
+      copy[activeTab] = { ...copy[activeTab], messages: [] };
+      return copy;
+    });
   };
 
   const onKeyDown = e => {
@@ -145,13 +203,31 @@ function ChatApp() {
 
   return React.createElement('div', { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4' },
     React.createElement('h1', { className: 'text-2xl font-bold mb-2' }, 'AI Assistant Chat'),
+    React.createElement('div', { id: 'tabs', className: 'flex gap-2 mb-2' },
+      [
+        ...tabs.map((t, i) =>
+          React.createElement('div', {
+            key: i,
+            onClick: () => switchTab(i),
+            className: cn('px-2 py-1 rounded cursor-pointer', i === activeTab ? 'bg-blue-600 text-white' : 'bg-gray-200')
+          }, [
+            `Tab ${i + 1} (${t.model || 'default'})`,
+            tabs.length > 1 ? React.createElement('button', {
+              onClick: e => { e.stopPropagation(); closeTab(i); },
+              className: 'ml-1 text-xs'
+            }, 'x') : null
+          ])
+        ),
+        React.createElement('button', { id: 'add-tab', key: 'add', onClick: addTab, className: 'px-2 py-1 bg-green-200 rounded' }, '+')
+      ]
+    ),
     React.createElement('ul', { className: 'text-xs list-disc pl-5 space-y-1' }, [
       React.createElement('li', { key: 'w' }, 'Pergunte "Qual o clima em <cidade>?" para acionar a ferramenta de clima.'),
       React.createElement('li', { key: 'e' }, 'Diga "Envie um email..." para usar o envio de emails.'),
       React.createElement('li', { key: 'u' }, 'Use o botão Update para atualizar o assistente.')
     ]),
     React.createElement('div', { id: 'messages', ref: messagesRef, className: 'border h-72 overflow-y-auto p-2 space-y-2' },
-      messages.map((m, i) =>
+      currentTab.messages.map((m, i) =>
         React.createElement('div', { className: 'msg text-sm', key: i },
           [
             React.createElement('span', { className: cn(m.role === 'user' ? 'font-bold' : 'text-gray-700') }, `${m.role}:`),
