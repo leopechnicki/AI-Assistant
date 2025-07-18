@@ -16,6 +16,7 @@ global.TextDecoder = class {
 beforeEach(() => {
   document.body.innerHTML = `<div id="app"></div>`;
   fetch.mockClear();
+  global.confirm = jest.fn(() => true);
 });
 
 test('pressing Enter sends the message', async () => {
@@ -35,5 +36,6 @@ test('clicking shutdown sends request', async () => {
   const button = document.getElementById('shutdown');
   button.click();
   await new Promise(r => setTimeout(r, 0));
+  expect(confirm).toHaveBeenCalledWith('Are you sure\u2026?');
   expect(fetch).toHaveBeenCalledWith('/api/shutdown', expect.objectContaining({ method: 'POST' }));
 });
