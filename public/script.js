@@ -113,6 +113,7 @@ function ChatApp() {
   };
 
   const shutdown = async () => {
+    if (!confirm('Are you sure…?')) return;
     await fetch('/api/shutdown', { method: 'POST' });
   };
 
@@ -143,7 +144,7 @@ function ChatApp() {
       React.createElement(
         Button,
         { id: 'shutdown', onClick: shutdown, className: 'bg-red-600 hover:bg-red-600/90' },
-        'Shutdown'
+        '\u23FB'
       )
     )
   );
