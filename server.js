@@ -7,7 +7,7 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage, sendMessageStream, getEnv } = require('./openaiClient');
+const { sendMessage, sendMessageStream, getEnv, chatWithOllamaTools } = require('./openaiClient');
 const MCP = require('./mcp');
 const mcp = new MCP();
 const { exec } = require('child_process');
@@ -52,7 +52,9 @@ app.post('/api/chat', async (req, res) => {
   }
   try {
     console.log(`POST /api/chat: ${message}`);
-    const reply = await sendMessage(message);
+    const reply = getEnv() === 'ollama'
+      ? await chatWithOllamaTools(message)
+      : await sendMessage(message);
     console.log(`reply: ${reply}`);
     res.json({ reply });
   } catch (err) {

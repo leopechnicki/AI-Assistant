@@ -117,6 +117,12 @@ function ChatApp() {
     await fetch('/api/shutdown', { method: 'POST' });
   };
 
+  const updateAssistant = async () => {
+    const res = await fetch('/api/update', { method: 'POST' });
+    const data = await res.json();
+    alert(data.reply || data.error);
+  };
+
   const resetConversation = () => {
     setMessages([]);
   };
@@ -135,6 +141,11 @@ function ChatApp() {
 
   return React.createElement('div', { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4' },
     React.createElement('h1', { className: 'text-2xl font-bold mb-2' }, 'AI Assistant Chat'),
+    React.createElement('ul', { className: 'text-xs list-disc pl-5 space-y-1' }, [
+      React.createElement('li', { key: 'w' }, 'Pergunte "Qual o clima em <cidade>?" para acionar a ferramenta de clima.'),
+      React.createElement('li', { key: 'e' }, 'Diga "Envie um email..." para usar o envio de emails.'),
+      React.createElement('li', { key: 'u' }, 'Use o botão Update para atualizar o assistente.')
+    ]),
     React.createElement('div', { id: 'messages', ref: messagesRef, className: 'border h-72 overflow-y-auto p-2 space-y-2' },
       messages.map((m, i) =>
         React.createElement('div', { className: 'msg text-sm', key: i },
@@ -180,6 +191,7 @@ function ChatApp() {
       React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
       React.createElement(Button, { id: 'reset', onClick: resetConversation, className: 'bg-yellow-600 hover:bg-yellow-600/90' }, 'New'),
       React.createElement(Button, { id: 'clear', onClick: clearMessages, className: 'bg-gray-600 hover:bg-gray-600/90' }, 'Clear'),
+      React.createElement(Button, { id: 'update', onClick: updateAssistant, className: 'bg-blue-800 hover:bg-blue-800/90' }, 'Update'),
       React.createElement(
         Button,
         { id: 'shutdown', onClick: shutdown, className: 'bg-red-600 hover:bg-red-600/90' },
