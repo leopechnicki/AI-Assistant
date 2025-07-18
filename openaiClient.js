@@ -269,4 +269,47 @@ async function listModels(targetEnv) {
   return model ? [model] : [];
 }
 
-module.exports = { sendMessage, sendMessageStream, setEnv, setClientFactory, getEnv, chatWithOllamaTools, listModels };
+async function generateCompletion(prompt, options = {}) {
+  if (options.env !== 'ollama') {
+    throw new Error('generateCompletion only supports ollama');
+  }
+  try {
+    const res = await axios.post('http://localhost:11434/api/generate', {
+      model: getModelForEnv('ollama'),
+      prompt,
+      stream: false,
+      template: OLLAMA_TEMPLATE
+    });
+    return res.data.response || '';
+  } catch (err) {
+    const msg = err.response?.data?.error || err.message;
+    throw new Error(`Ollama generate failed: ${msg}`);
+  }
+}
+
+async function showModel(model, options = {}) {
+  if ((options.env && options.env !== 'ollama')) {
+    throw new Error('showModel only supports ollama');
+  }
+  try {
+    const res = await axios.post('http://localhost:11434/api/show', {
+      model: model || getModelForEnv('ollama')
+    });
+    return res.data;
+  } catch (err) {
+    const msg = err.response?.data?.error || err.message;
+    throw new Error(`Ollama show failed: ${msg}`);
+  }
+}
+
+module.exports = {
+  sendMessage,
+  sendMessageStream,
+  setEnv,
+  setClientFactory,
+  getEnv,
+  chatWithOllamaTools,
+  listModels,
+  generateCompletion,
+  showModel
+};

@@ -143,3 +143,22 @@ test('openai tool calls are executed', async () => {
   expect(toolMsg).toBeTruthy();
 });
 
+test('generateCompletion uses ollama generate endpoint', async () => {
+  postMock.mockResolvedValueOnce({ data: { response: 'hello' } });
+  const { generateCompletion } = require('../openaiClient');
+  const res = await generateCompletion('hi', { env: 'ollama' });
+  expect(postMock).toHaveBeenCalledWith(
+    'http://localhost:11434/api/generate',
+    expect.objectContaining({ model: 'MFDoom/deepseek-r1-tool-calling:8b', prompt: 'hi', stream: false })
+  );
+  expect(res).toBe('hello');
+});
+
+test('showModel fetches model info', async () => {
+  postMock.mockResolvedValueOnce({ data: { modelfile: 'abc' } });
+  const { showModel } = require('../openaiClient');
+  const info = await showModel('m1', { env: 'ollama' });
+  expect(postMock).toHaveBeenCalledWith('http://localhost:11434/api/show', { model: 'm1' });
+  expect(info.modelfile).toBe('abc');
+});
+
