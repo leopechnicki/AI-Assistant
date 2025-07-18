@@ -56,3 +56,14 @@ Import the supplied Node-RED flow JSON to quickly wire the assistant into your e
 3. Click **Import** and deploy the flow.
 
 The flow exposes buttons for standard actions such as sending messages and shutting down the host. A new **Update Assistant** button triggers an HTTP request to `/api/update`, which runs `git pull` on the server. Ensure `git` is installed and the repository has write access to its remote so the update can succeed.
+
+## Server Control
+
+The chat UI provides a power button labeled with a power icon. Clicking it now
+prompts for confirmation before sending a `POST` request to `/api/shutdown`. This
+endpoint only accepts requests originating from `localhost` to prevent remote
+shutdowns.
+
+For maintenance, the server also exposes an `/api/update` endpoint that performs
+`git pull`. This is useful for triggering updates programmatically, for example
+from the Node-RED flow's **Update Assistant** button.
