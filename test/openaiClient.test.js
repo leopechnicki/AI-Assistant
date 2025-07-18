@@ -1,6 +1,9 @@
 jest.mock('openai');
+jest.mock('axios', () => ({ post: jest.fn() }));
 
 const OpenAI = require('openai');
+let axios = require('axios');
+let postMock = axios.post;
 
 const createMock = jest.fn();
 const openaiInstance = { chat: { completions: { create: createMock } } };
@@ -14,12 +17,15 @@ beforeEach(() => {
     choices: [{ message: { content: 'unit reply' } }]
   });
   fetch.mockReset();
+  postMock.mockReset();
 });
 
 let sendMessage, sendMessageStream, setEnv, setClientFactory;
 
 beforeEach(() => {
   jest.resetModules();
+  axios = require('axios');
+  postMock = axios.post;
   ({ sendMessage, sendMessageStream, setEnv, setClientFactory } = require('../openaiClient'));
   setClientFactory(() => openaiInstance);
 });
@@ -88,30 +94,24 @@ test('sendMessageStream uses MCP when env is local', async () => {
 
 test('sendMessage uses Ollama when env is ollama', async () => {
   setEnv('ollama');
-  const { Readable } = require('stream');
-  const body = Readable.from([
-    Buffer.from(JSON.stringify({ message: { content: 'he' } }) + '\n'),
-    Buffer.from(JSON.stringify({ message: { content: 'y' } }) + '\n')
-  ]);
-  fetch.mockResolvedValueOnce({ body });
+  postMock.mockResolvedValueOnce({ data: { message: { content: 'hey' } } });
   const reply = await sendMessage('hi');
-  expect(fetch).toHaveBeenCalled();
+  expect(postMock).toHaveBeenCalled();
+  expect(postMock.mock.calls[0][0]).toBe('http://localhost:11434/api/chat');
+  expect(postMock.mock.calls[0][1].tools).toBeDefined();
+  expect(postMock.mock.calls[0][1].tools.find(t => t.function.name === 'search_web')).toBeTruthy();
   expect(reply).toBe('hey');
 });
 
 test('sendMessageStream uses Ollama when env is ollama', async () => {
   setEnv('ollama');
-  const { Readable } = require('stream');
-  const body = Readable.from([
-    Buffer.from(JSON.stringify({ message: { content: 'he' } }) + '\n'),
-    Buffer.from(JSON.stringify({ message: { content: 'llo' } }) + '\n')
-  ]);
-  fetch.mockResolvedValueOnce({ body });
+  postMock.mockResolvedValueOnce({ data: { message: { content: 'hello' } } });
   const parts = [];
   for await (const p of sendMessageStream('hi')) {
     parts.push(p);
   }
-  expect(fetch).toHaveBeenCalled();
+  expect(postMock).toHaveBeenCalled();
+  expect(postMock.mock.calls[0][1].tools.find(t => t.function.name === 'search_web')).toBeTruthy();
   expect(parts.join('')).toBe('hello');
 });
 

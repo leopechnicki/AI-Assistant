@@ -129,29 +129,41 @@ async function* sendMessageStream(message, devices = []) {
   }
 
   if (env === 'ollama') {
-    const res = await fetch('http://localhost:11434/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
-        stream: true,
-        messages: [{ role: 'user', content: message }]
-      })
+    const currentMessages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ];
+
+    const response = await axios.post('http://localhost:11434/api/chat', {
+      model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+      messages: currentMessages,
+      tools,
+      stream: false
     });
-    const decoder = new TextDecoder();
-    let buffer = '';
-    for await (const chunk of res.body) {
-      buffer += decoder.decode(chunk);
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        const data = JSON.parse(trimmed);
-        const token = data.message?.content;
-        if (token) yield token;
+
+    let msg = response.data.message;
+    if (msg.tool_calls && msg.tool_calls.length > 0) {
+      const toolOutputs = [];
+      for (const call of msg.tool_calls) {
+        const fn = availableFunctions[call.function.name];
+        const args = call.function.arguments;
+        if (fn) {
+          const out = await fn(...Object.values(args));
+          toolOutputs.push({ role: 'tool', content: JSON.stringify(out), tool_call_id: call.id });
+        } else {
+          toolOutputs.push({ role: 'tool', content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }), tool_call_id: call.id });
+        }
       }
+      currentMessages.push(...toolOutputs);
+      const final = await axios.post('http://localhost:11434/api/chat', {
+        model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+        messages: currentMessages,
+        stream: false
+      });
+      msg = final.data.message;
     }
+
+    if (msg.content) yield msg.content;
     return;
   }
 
