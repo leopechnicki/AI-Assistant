@@ -43,7 +43,7 @@ function formatText(text) {
 
 function ChatApp() {
   const [tabs, setTabs] = React.useState([
-    { messages: [], env: 'openai', model: '' }
+    { messages: [], env: 'ollama', model: '' }
   ]);
   const [activeTab, setActiveTab] = React.useState(0);
   const inputRef = React.useRef(null);
@@ -51,6 +51,9 @@ function ChatApp() {
   const envRef = React.useRef(null);
   const modelRef = React.useRef(null);
   const messagesRef = React.useRef(null);
+  const [models, setModels] = React.useState([]);
+  const [modelError, setModelError] = React.useState('');
+  const [showMenu, setShowMenu] = React.useState(false);
 
   const currentTab = tabs[activeTab];
 
@@ -69,12 +72,38 @@ function ChatApp() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [currentTab.messages]);
 
+  const loadModels = async env => {
+    setModelError('');
+    try {
+      const res = await fetch(`/api/models?env=${env}`);
+      const data = await res.json();
+      setModels(data.models || []);
+      if (modelRef.current) {
+        modelRef.current.value = '';
+        onModelChange();
+      }
+      if (!data.models || data.models.length === 0) {
+        setModelError('No models available');
+      }
+    } catch (err) {
+      setModelError('Failed to load models');
+      setModels([]);
+    }
+  };
+
+  React.useEffect(() => {
+    if (envRef.current) {
+      loadModels(envRef.current.value);
+    }
+  }, []);
+
   const sendText = async () => {
     const input = inputRef.current;
     const fileInput = fileRef.current;
     const text = input.value.trim();
     const file = fileInput.files[0];
     if (!text && !file) return;
+    if (!modelRef.current.value) return;
     if (file) {
       const reader = new FileReader();
       const data = await new Promise(r => { reader.onload = () => r(reader.result); });
@@ -146,7 +175,7 @@ function ChatApp() {
   };
 
   const addTab = () => {
-    setTabs(prev => [...prev, { messages: [], env: 'openai', model: '' }]);
+    setTabs(prev => [...prev, { messages: [], env: 'ollama', model: '' }]);
     setActiveTab(tabs.length);
   };
 
@@ -164,6 +193,8 @@ function ChatApp() {
     if (!envRef.current || !modelRef.current) return;
     envRef.current.value = tabs[activeTab].env;
     modelRef.current.value = tabs[activeTab].model;
+    loadModels(tabs[activeTab].env);
+    onModelChange();
   }, [activeTab, tabs]);
 
   const shutdown = async () => {
@@ -177,22 +208,6 @@ function ChatApp() {
     alert(data.reply || data.error);
   };
 
-  const resetConversation = () => {
-    setTabs(prev => {
-      const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], messages: [] };
-      return copy;
-    });
-  };
-
-  const clearMessages = () => {
-    if (!confirm('Delete all messages?')) return;
-    setTabs(prev => {
-      const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], messages: [] };
-      return copy;
-    });
-  };
 
   const onKeyDown = e => {
     if (e.key === 'Enter') {
@@ -201,7 +216,31 @@ function ChatApp() {
     }
   };
 
-  return React.createElement('div', { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4' },
+  const onEnvChange = e => {
+    loadModels(e.target.value);
+    setTabs(prev => {
+      const copy = [...prev];
+      copy[activeTab] = { ...copy[activeTab], env: e.target.value, model: '' };
+      return copy;
+    });
+  };
+
+  const onModelChange = () => {
+    if (!modelRef.current || !inputRef.current) return;
+    const value = modelRef.current.value;
+    inputRef.current.disabled = !value;
+    const sendBtn = document.getElementById('send');
+    if (sendBtn) sendBtn.disabled = !value;
+    setTabs(prev => {
+      const copy = [...prev];
+      copy[activeTab] = { ...copy[activeTab], model: value };
+      return copy;
+    });
+  };
+
+  const toggleMenu = () => setShowMenu(!showMenu);
+
+  return React.createElement('div', { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4 relative' },
     React.createElement('h1', { className: 'text-2xl font-bold mb-2' }, 'AI Assistant Chat'),
     React.createElement('div', { id: 'tabs', className: 'flex gap-2 mb-2' },
       [
@@ -267,21 +306,26 @@ function ChatApp() {
           ]
         )
       ),
-      React.createElement('select', { id: 'env', ref: envRef, className: 'border rounded-md p-2 text-sm' }, [
-        React.createElement('option', { key: 'openai', value: 'openai' }, 'openai'),
-        React.createElement('option', { key: 'ollama', value: 'ollama' }, 'ollama'),
-        React.createElement('option', { key: 'local', value: 'local' }, 'local')
+      React.createElement('select', { id: 'env', ref: envRef, className: 'border rounded-md p-2 text-sm', onChange: onEnvChange, defaultValue: 'ollama' }, [
+        React.createElement('option', { key: 'ollama', value: 'ollama' }, 'Ollama'),
+        React.createElement('option', { key: 'openai', value: 'openai' }, 'OpenAI')
       ]),
-      React.createElement('input', { id: 'model', ref: modelRef, placeholder: 'model', className: 'border rounded-md p-2 text-sm w-24' }),
-      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm' }),
-      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
-      React.createElement(Button, { id: 'reset', onClick: resetConversation, className: 'bg-yellow-600 hover:bg-yellow-600/90' }, 'New'),
-      React.createElement(Button, { id: 'clear', onClick: clearMessages, className: 'bg-gray-600 hover:bg-gray-600/90' }, 'Clear'),
-      React.createElement(Button, { id: 'update', onClick: updateAssistant, className: 'bg-blue-800 hover:bg-blue-800/90' }, 'Update'),
       React.createElement(
-        Button,
-        { id: 'shutdown', onClick: shutdown, className: 'bg-red-600 hover:bg-red-600/90' },
-        '\u23FB'
+        'select',
+        { id: 'model', ref: modelRef, onChange: onModelChange, className: 'border rounded-md p-2 text-sm w-32' },
+        [React.createElement('option', { key: 'none', value: '' }, 'Select model'),
+         ...models.map(m => React.createElement('option', { key: m, value: m }, m))]
+      ),
+      modelError && React.createElement('span', { className: 'text-xs text-red-600' }, modelError),
+      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm', disabled: true }),
+      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90', disabled: true }, 'Send'),
+      showMenu && React.createElement('div', { className: 'absolute right-0 top-10 bg-white border rounded shadow p-2 space-y-1' }, [
+        React.createElement('button', { key: 'update', onClick: updateAssistant, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Update'),
+        React.createElement('button', { key: 'shutdown', onClick: shutdown, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Shutdown')
+      ]),
+      React.createElement('button', { onClick: toggleMenu, className: 'ml-auto p-2', title: 'Settings' },
+        React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 20 20', fill: 'currentColor', className: 'w-5 h-5' },
+          React.createElement('path', { d: 'M10 2a2 2 0 012 2v1.09a6.967 6.967 0 012.53 1.07l.77-.77a2 2 0 112.83 2.83l-.77.77A6.967 6.967 0 0116.91 10H18a2 2 0 110 4h-1.09a6.967 6.967 0 01-1.07 2.53l.77.77a2 2 0 11-2.83 2.83l-.77-.77A6.967 6.967 0 0112 16.91V18a2 2 0 11-4 0v-1.09a6.967 6.967 0 01-2.53-1.07l-.77.77a2 2 0 11-2.83-2.83l.77-.77A6.967 6.967 0 013.09 12H2a2 2 0 110-4h1.09a6.967 6.967 0 011.07-2.53l-.77-.77a2 2 0 112.83-2.83l.77.77A6.967 6.967 0 018 3.09V2a2 2 0 012-2z' }))
       )
     )
   );
