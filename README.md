@@ -67,3 +67,16 @@ shutdowns.
 For maintenance, the server also exposes an `/api/update` endpoint that performs
 `git pull`. This is useful for triggering updates programmatically, for example
 from the Node-RED flow's **Update Assistant** button.
+
+## Tool Calling
+
+When running in **Ollama (Local)** mode the assistant can execute JavaScript
+functions. Two example tools are provided:
+
+- `get_current_weather` – ask "Qual o clima em <cidade>?" to receive a
+  simulated forecast.
+- `send_email` – use phrases like "Envie um email para ..." to trigger a fake
+  email send.
+
+The chat UI now includes an **Update** button which calls `/api/update` and
+performs a `git pull` so you can update the repository from the browser.

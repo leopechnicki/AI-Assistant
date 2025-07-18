@@ -17,6 +17,7 @@ beforeEach(() => {
   document.body.innerHTML = `<div id="app"></div>`;
   fetch.mockClear();
   global.confirm = jest.fn(() => true);
+  global.alert = jest.fn();
 });
 
 test('pressing Enter sends the message', async () => {
@@ -67,4 +68,13 @@ test('clicking clear removes messages with confirm', async () => {
   await new Promise(r => setTimeout(r, 0));
   expect(confirm).toHaveBeenCalledWith('Delete all messages?');
   expect(document.querySelectorAll('#messages .msg').length).toBe(0);
+});
+
+test('clicking update triggers repository pull', async () => {
+  setupChat(document);
+  await new Promise(r => setTimeout(r, 0));
+  const update = document.getElementById('update');
+  update.click();
+  await new Promise(r => setTimeout(r, 0));
+  expect(fetch).toHaveBeenCalledWith('/api/update', expect.objectContaining({ method: 'POST' }));
 });
