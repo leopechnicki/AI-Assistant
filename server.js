@@ -7,7 +7,7 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage, sendMessageStream, getEnv } = require('./openaiClient');
+const { sendMessage, sendMessageStream, getEnv, listModels } = require('./openaiClient');
 const { exec } = require('child_process');
 
 function getShutdownCommand() {
@@ -101,6 +101,19 @@ app.post('/api/update', (req, res) => {
     console.log(stdout);
     res.json({ reply: stdout.trim() });
   });
+});
+
+app.get('/api/models', async (req, res) => {
+  const env = req.query.env;
+  if (!env) {
+    return res.status(400).json({ error: 'env is required' });
+  }
+  try {
+    const models = await listModels(env);
+    res.json({ models });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.use(express.static('public'));

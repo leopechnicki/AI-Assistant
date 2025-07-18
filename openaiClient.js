@@ -2,6 +2,9 @@ const OpenAI = require('openai');
 const MCP = require('./mcp');
 const axios = require('axios');
 const DEFAULT_OLLAMA_MODEL = 'deepseek-r1:7b';
+const { promisify } = require('util');
+const { exec } = require('child_process');
+const execAsync = promisify(exec);
 
 let createClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -136,13 +139,17 @@ async function* sendMessageStream(message, devices = [], options = {}) {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: message }
     ];
-
-    const response = await axios.post('http://localhost:11434/api/chat', {
-      model: reqModel || process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
-      messages: currentMessages,
-      tools,
-      stream: false
-    });
+    let response;
+    try {
+      response = await axios.post('http://localhost:11434/api/chat', {
+        model: reqModel || process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+        messages: currentMessages,
+        tools,
+        stream: false
+      });
+    } catch (err) {
+      throw new Error('Ollama request failed');
+    }
 
     let msg = response.data.message;
     if (msg.tool_calls && msg.tool_calls.length > 0) {
@@ -171,11 +178,16 @@ async function* sendMessageStream(message, devices = [], options = {}) {
   }
 
   const openai = createClient();
-  const stream = await openai.chat.completions.create({
-    model: reqModel || 'gpt-3.5-turbo',
-    messages: [{ role: 'user', content: message }],
-    stream: true
-  });
+  let stream;
+  try {
+    stream = await openai.chat.completions.create({
+      model: reqModel || 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: message }],
+      stream: true
+    });
+  } catch (err) {
+    throw new Error('OpenAI request failed');
+  }
   for await (const part of stream) {
     const token = part.choices[0]?.delta?.content;
     if (token) yield token;
@@ -230,4 +242,26 @@ async function chatWithOllamaTools(userMessage, history = []) {
   return msg.content;
 }
 
-module.exports = { sendMessage, sendMessageStream, setEnv, setClientFactory, getEnv, chatWithOllamaTools };
+async function listModels(targetEnv) {
+  if (targetEnv === 'ollama') {
+    try {
+      const { stdout } = await execAsync('ollama list --json');
+      const parsed = JSON.parse(stdout);
+      return parsed.models.map(m => m.name);
+    } catch (err) {
+      throw new Error('Failed to list Ollama models');
+    }
+  }
+  if (targetEnv === 'openai') {
+    try {
+      const openai = createClient();
+      const res = await openai.models.list();
+      return res.data.map(m => m.id);
+    } catch (err) {
+      throw new Error('Failed to list OpenAI models');
+    }
+  }
+  return [];
+}
+
+module.exports = { sendMessage, sendMessageStream, setEnv, setClientFactory, getEnv, chatWithOllamaTools, listModels };
