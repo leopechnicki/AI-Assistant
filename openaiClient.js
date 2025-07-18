@@ -1,7 +1,7 @@
 const OpenAI = require('openai');
 const MCP = require('./mcp');
 const axios = require('axios');
-const DEFAULT_OLLAMA_MODEL = 'deepseek-r1:8b';
+const DEFAULT_OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'deepseek-r1:8b';
 const DEFAULT_OPENAI_MODEL = 'gpt-3.5-turbo';
 
 let createClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -158,7 +158,8 @@ async function* sendMessageStream(message, devices = [], options = {}) {
         stream: false
       });
     } catch (err) {
-      throw new Error('Ollama request failed');
+      const msg = err.response?.data?.error || err.message;
+      throw new Error(`Ollama request failed: ${msg}`);
     }
 
     let msg = response.data.message;
@@ -175,11 +176,17 @@ async function* sendMessageStream(message, devices = [], options = {}) {
         }
       }
       currentMessages.push(...toolOutputs);
-      const final = await axios.post('http://localhost:11434/api/chat', {
-        model,
-        messages: currentMessages,
-        stream: false
-      });
+      let final;
+      try {
+        final = await axios.post('http://localhost:11434/api/chat', {
+          model,
+          messages: currentMessages,
+          stream: false
+        });
+      } catch (err) {
+        const msgErr = err.response?.data?.error || err.message;
+        throw new Error(`Ollama request failed: ${msgErr}`);
+      }
       msg = final.data.message;
     }
 
@@ -220,12 +227,18 @@ async function chatWithOllamaTools(userMessage, history = []) {
   currentMessages = currentMessages.concat(history);
   currentMessages.push({ role: 'user', content: userMessage });
 
-  const response = await axios.post('http://localhost:11434/api/chat', {
-    model: getModelForEnv('ollama'),
-    messages: currentMessages,
-    tools,
-    stream: false
-  });
+  let response;
+  try {
+    response = await axios.post('http://localhost:11434/api/chat', {
+      model: getModelForEnv('ollama'),
+      messages: currentMessages,
+      tools,
+      stream: false
+    });
+  } catch (err) {
+    const msg = err.response?.data?.error || err.message;
+    throw new Error(`Ollama request failed: ${msg}`);
+  }
 
   let msg = response.data.message;
   if (msg.tool_calls && msg.tool_calls.length > 0) {
@@ -241,11 +254,17 @@ async function chatWithOllamaTools(userMessage, history = []) {
       }
     }
     currentMessages.push(...toolOutputs);
-    const final = await axios.post('http://localhost:11434/api/chat', {
-      model: getModelForEnv('ollama'),
-      messages: currentMessages,
-      stream: false
-    });
+    let final;
+    try {
+      final = await axios.post('http://localhost:11434/api/chat', {
+        model: getModelForEnv('ollama'),
+        messages: currentMessages,
+        stream: false
+      });
+    } catch (err) {
+      const msgErr = err.response?.data?.error || err.message;
+      throw new Error(`Ollama request failed: ${msgErr}`);
+    }
     return final.data.message.content;
   }
 
