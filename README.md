@@ -14,10 +14,11 @@ This project is a simple chat application built with React that interacts with t
    - `OLLAMA_MODEL` – override the default Ollama model.
 4. Start the server:
    ```bash
-   npx nps start
+   npm start
    ```
-   This now simply spawns `server.js` using your existing environment variables with no interactive prompts.
+   The server starts immediately using the environment variables you set.
 5. Open `http://localhost:3000` in your browser.
+6. Select the environment and model for each prompt using the drop-down and model field in the chat UI.
 
 ## Streaming
 
