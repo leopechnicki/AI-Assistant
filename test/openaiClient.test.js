@@ -24,7 +24,7 @@ let sendMessage, sendMessageStream, setClientFactory;
 
 beforeEach(() => {
   jest.resetModules();
-  process.env.OLLAMA_MODEL = 'deepseek-r1:8b';
+  process.env.OLLAMA_MODEL = 'MFDoom/deepseek-r1-tool-calling:8b';
   axios = require('axios');
   postMock = axios.post;
   ({ sendMessage, sendMessageStream, setClientFactory } = require('../openaiClient'));
@@ -32,16 +32,14 @@ beforeEach(() => {
 });
 
 test('sendMessage returns text from openai', async () => {
-  async function* gen() {
-    yield { choices: [{ delta: { content: 'unit ' } }] };
-    yield { choices: [{ delta: { content: 'reply' } }] };
-  }
-  createMock.mockResolvedValueOnce(gen());
+  createMock.mockResolvedValueOnce({ choices: [{ message: { content: 'unit reply' } }] });
   const reply = await sendMessage('hi', [], { env: 'openai' });
   expect(createMock).toHaveBeenCalledWith({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-3.5-turbo-1106',
     messages: [{ role: 'user', content: 'hi' }],
-    stream: true
+    tools: expect.any(Array),
+    tool_choice: 'auto',
+    stream: false
   });
   expect(reply).toBe('unit reply');
 });
@@ -65,20 +63,18 @@ test('sendMessage throws when openai fails', async () => {
   await expect(sendMessage('hi', [], { env: 'openai' })).rejects.toThrow('fail');
 });
 
-test('sendMessageStream yields tokens', async () => {
-  async function* gen() {
-    yield { choices: [{ delta: { content: 'he' } }] };
-    yield { choices: [{ delta: { content: 'llo' } }] };
-  }
-  createMock.mockResolvedValueOnce(gen());
+test('sendMessageStream returns openai reply', async () => {
+  createMock.mockResolvedValueOnce({ choices: [{ message: { content: 'hello' } }] });
   const parts = [];
   for await (const p of sendMessageStream('hi', [], { env: 'openai' })) {
     parts.push(p);
   }
   expect(createMock).toHaveBeenCalledWith({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-3.5-turbo-1106',
     messages: [{ role: 'user', content: 'hi' }],
-    stream: true
+    tools: expect.any(Array),
+    tool_choice: 'auto',
+    stream: false
   });
   expect(parts.join('')).toBe('hello');
 });
@@ -104,7 +100,7 @@ test('sendMessage uses Ollama when env is ollama', async () => {
   const reply = await sendMessage('hi', [], { env: 'ollama' });
   expect(postMock).toHaveBeenCalled();
   expect(postMock.mock.calls[0][0]).toBe('http://localhost:11434/api/chat');
-  expect(postMock.mock.calls[0][1].model).toBe('deepseek-r1:8b');
+  expect(postMock.mock.calls[0][1].model).toBe('MFDoom/deepseek-r1-tool-calling:8b');
   expect(postMock.mock.calls[0][1].tools).toBeDefined();
   expect(postMock.mock.calls[0][1].tools.find(t => t.function.name === 'search_web')).toBeTruthy();
   expect(reply).toBe('hey');
@@ -117,7 +113,7 @@ test('sendMessageStream uses Ollama when env is ollama', async () => {
     parts.push(p);
   }
   expect(postMock).toHaveBeenCalled();
-  expect(postMock.mock.calls[0][1].model).toBe('deepseek-r1:8b');
+  expect(postMock.mock.calls[0][1].model).toBe('MFDoom/deepseek-r1-tool-calling:8b');
   expect(postMock.mock.calls[0][1].tools.find(t => t.function.name === 'search_web')).toBeTruthy();
   expect(parts.join('')).toBe('hello');
 });
@@ -130,5 +126,20 @@ test('ollama errors do not fallback', async () => {
   postMock.mockRejectedValueOnce(new Error('boom'));
   await expect(sendMessage('hi', [], { env: 'ollama' })).rejects.toThrow('Ollama request failed');
   expect(createMock).not.toHaveBeenCalled();
+});
+
+test('openai tool calls are executed', async () => {
+  createMock
+    .mockResolvedValueOnce({
+      choices: [{ message: { tool_calls: [{ id: '1', function: { name: 'send_email', arguments: '{"to":"a@b","subject":"s","body":"b"}' } }] } }]
+    })
+    .mockResolvedValueOnce({ choices: [{ message: { content: 'done' } }] });
+
+  const reply = await sendMessage('hi', [], { env: 'openai' });
+  expect(reply).toBe('done');
+  expect(createMock.mock.calls[0][0].model).toBe('gpt-3.5-turbo-1106');
+  expect(createMock.mock.calls[0][0].tools).toBeDefined();
+  const toolMsg = createMock.mock.calls[1][0].messages.find(m => m.role === 'tool');
+  expect(toolMsg).toBeTruthy();
 });
 
