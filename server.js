@@ -25,6 +25,10 @@ app.post('/api/chat/stream', async (req, res) => {
     console.log('POST /api/chat/stream missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
+  if (!env || !['openai', 'ollama', 'local'].includes(env)) {
+    console.log('POST /api/chat/stream missing or invalid provider');
+    return res.status(400).json({ error: 'Provider is required' });
+  }
 
   try {
     console.log(`POST /api/chat/stream: ${message}`);
@@ -37,7 +41,8 @@ app.post('/api/chat/stream', async (req, res) => {
     res.write('data: [DONE]\n\n');
     res.end();
   } catch (err) {
-    console.error('OpenAI stream failed', err);
+    console.error(`${env} stream failed`, err);
+    res.write(`data: ${err.message}\n\n`);
     res.end();
   }
 });
@@ -48,14 +53,18 @@ app.post('/api/chat', async (req, res) => {
     console.log('POST /api/chat missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
+  if (!env || !['openai', 'ollama', 'local'].includes(env)) {
+    console.log('POST /api/chat missing or invalid provider');
+    return res.status(400).json({ error: 'Provider is required' });
+  }
   try {
     console.log(`POST /api/chat: ${message}`);
     const reply = await sendMessage(message, [], { env });
     console.log(`reply: ${reply}`);
     res.json({ reply });
   } catch (err) {
-    console.error('OpenAI request failed', err);
-    res.status(500).json({ error: 'OpenAI request failed' });
+    console.error(`${env} request failed`, err);
+    res.status(500).json({ error: err.message });
   }
 });
 

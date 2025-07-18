@@ -57,6 +57,11 @@ describe('POST /api/chat', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('requires provider', async () => {
+    const res = await request(app).post('/api/chat').send({ message: 'hi' });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('returns 413 for large payloads', async () => {
     const bigMessage = 'a'.repeat(1024 * 2100); // >2 MB
     const res = await request(app).post('/api/chat').send({ message: bigMessage, env: 'openai' });
@@ -84,6 +89,13 @@ describe('POST /api/chat/stream', () => {
     expect(res.headers['content-type']).toMatch(/text\/event-stream/);
     expect(res.text).toContain('data: a');
     expect(res.text).toContain('data: b');
+  });
+
+  it('requires provider', async () => {
+    const res = await request(app)
+      .post('/api/chat/stream')
+      .send({ message: 'hi' });
+    expect(res.statusCode).toBe(400);
   });
 });
 

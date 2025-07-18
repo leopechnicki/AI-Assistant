@@ -121,3 +121,13 @@ test('sendMessageStream uses Ollama when env is ollama', async () => {
   expect(parts.join('')).toBe('hello');
 });
 
+test('sendMessage requires provider', async () => {
+  await expect(sendMessage('hi')).rejects.toThrow('Provider is required');
+});
+
+test('ollama errors do not fallback', async () => {
+  postMock.mockRejectedValueOnce(new Error('boom'));
+  await expect(sendMessage('hi', [], { env: 'ollama' })).rejects.toThrow('Ollama request failed');
+  expect(createMock).not.toHaveBeenCalled();
+});
+
