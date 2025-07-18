@@ -46,3 +46,13 @@ follow good conversational etiquette. Example system prompts:
 ## Bluetooth via MCP
 
 The server can attempt to connect to a Bluetooth device using MCP. Send a `POST` request to `/api/connect` with a JSON body containing an `address` field.
+
+## Node-RED Integration
+
+Import the supplied Node-RED flow JSON to quickly wire the assistant into your existing automation:
+
+1. Start your Node-RED instance.
+2. From the menu, choose **Import → Clipboard** and paste the contents of the provided flow JSON file.
+3. Click **Import** and deploy the flow.
+
+The flow exposes buttons for standard actions such as sending messages and shutting down the host. A new **Update Assistant** button triggers an HTTP request to `/api/update`, which runs `git pull` on the server. Ensure `git` is installed and the repository has write access to its remote so the update can succeed.
