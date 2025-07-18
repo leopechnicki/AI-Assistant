@@ -19,9 +19,8 @@ This project is a simple chat application built with React that interacts with t
 
 ## Streaming
 
-Use the **Stream** checkbox in the UI to receive incremental tokens. The server
-exposes a `/api/chat/stream` endpoint that streams responses using
-Server-Sent Events.
+Responses are always streamed from the server using the `/api/chat/stream` endpoint
+and rendered incrementally in the UI.
 
 ## File Upload
 
@@ -33,6 +32,15 @@ Run unit and integration tests with:
 ```bash
 npm test
 ```
+
+## Prompts for Best Practices
+
+When crafting prompts for the assistant it can help to remind the model to
+follow good conversational etiquette. Example system prompts:
+
+- "You are a helpful assistant that answers concisely and cites sources when available."
+- "Explain your reasoning step by step before giving a final answer."
+
 
 
 ## Bluetooth via MCP
