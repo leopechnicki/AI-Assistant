@@ -7,6 +7,27 @@ if (typeof require !== 'undefined') {
   ReactDOM = window.ReactDOM;
 }
 
+function cn() {
+  return Array.from(arguments)
+    .filter(Boolean)
+    .join(' ');
+}
+
+const Button = React.forwardRef(function Button({ className, ...props }, ref) {
+  return React.createElement(
+    'button',
+    {
+      ref,
+      className: cn(
+        'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none px-3 py-2 bg-blue-600 text-white hover:bg-blue-600/90',
+        className
+      ),
+      ...props
+    },
+    props.children
+  );
+});
+
 function ChatApp() {
   const [messages, setMessages] = React.useState([]);
   const [useStream, setUseStream] = React.useState(false);
@@ -94,29 +115,29 @@ function ChatApp() {
     }
   };
 
-  return React.createElement('div', { id: 'chat' },
-    React.createElement('h1', null, 'AI Assistant Chat'),
-    React.createElement('div', { id: 'messages' },
+  return React.createElement('div', { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4' },
+    React.createElement('h1', { className: 'text-2xl font-bold mb-2' }, 'AI Assistant Chat'),
+    React.createElement('div', { id: 'messages', className: 'border h-72 overflow-y-auto p-2 space-y-2' },
       messages.map((m, i) =>
-        React.createElement('div', { className: 'msg', key: i },
-          React.createElement('span', { className: m.role }, `${m.role}:`), ' ', m.text)
+        React.createElement('div', { className: 'msg text-sm', key: i },
+          React.createElement('span', { className: cn(m.role === 'user' ? 'font-bold' : 'text-gray-700') }, `${m.role}:`), ' ', m.text)
       )
     ),
-    React.createElement('div', { className: 'controls' },
-      React.createElement('input', { type: 'file', id: 'file', ref: fileRef, accept: '.txt,image/*' }),
-      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown }),
-      React.createElement('label', null,
+    React.createElement('div', { className: 'controls flex gap-2' },
+      React.createElement('input', { type: 'file', id: 'file', ref: fileRef, accept: '.txt,image/*', className: 'flex-1 border rounded-md p-2 text-sm' }),
+      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm' }),
+      React.createElement('label', { className: 'flex items-center gap-1 text-sm' },
         React.createElement('input', {
           type: 'checkbox',
           checked: useStream,
           onChange: e => setUseStream(e.target.checked)
         }),
-        ' Stream'
+        'Stream'
       ),
-      React.createElement('button', { id: 'send', onClick: sendText }, 'Send'),
+      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
       React.createElement(
-        'button',
-        { id: 'shutdown', onClick: shutdown },
+        Button,
+        { id: 'shutdown', onClick: shutdown, className: 'bg-red-600 hover:bg-red-600/90' },
         'Shutdown'
       )
     )

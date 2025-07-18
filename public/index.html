@@ -3,75 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>AI Assistant Chat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-    }
-
-    #chat {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    #messages {
-      border: 1px solid #ddd;
-      padding: 10px;
-      height: 300px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-    }
-
-    .msg {
-      margin-bottom: 10px;
-    }
-
-    .user {
-      font-weight: bold;
-    }
-
-    .assistant {
-      color: #444;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-    }
-
-    input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    button {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    #send {
-      background-color: #4caf50;
-      color: #fff;
-    }
-
-    #shutdown {
-      background-color: #f44336;
-      color: #fff;
-    }
-
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="p-4 bg-gray-100 font-sans">
   <div id="app"></div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
