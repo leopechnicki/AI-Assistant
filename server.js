@@ -7,7 +7,14 @@ const app = express();
 // Use more verbose logging
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
-const { sendMessage, sendMessageStream, getEnv, listModels } = require('./openaiClient');
+const {
+  sendMessage,
+  sendMessageStream,
+  getEnv,
+  listModels,
+  generateCompletion,
+  showModel
+} = require('./openaiClient');
 const { exec } = require('child_process');
 
 function getShutdownCommand() {
@@ -64,6 +71,36 @@ app.post('/api/chat', async (req, res) => {
     res.json({ reply });
   } catch (err) {
     console.error(`${env} request failed`, err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/generate', async (req, res) => {
+  const { prompt, env } = req.body;
+  if (!prompt) {
+    console.log('POST /api/generate missing prompt');
+    return res.status(400).json({ error: 'prompt is required' });
+  }
+  if (env !== 'ollama') {
+    console.log('POST /api/generate invalid env');
+    return res.status(400).json({ error: 'env must be ollama' });
+  }
+  try {
+    const reply = await generateCompletion(prompt, { env });
+    res.json({ reply });
+  } catch (err) {
+    console.error('ollama generate failed', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/show', async (req, res) => {
+  const { model } = req.body || {};
+  try {
+    const info = await showModel(model, { env: 'ollama' });
+    res.json({ info });
+  } catch (err) {
+    console.error('ollama show failed', err);
     res.status(500).json({ error: err.message });
   }
 });

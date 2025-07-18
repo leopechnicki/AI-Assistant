@@ -170,3 +170,31 @@ describe('GET /api/models', () => {
   });
 });
 
+describe('new ollama routes', () => {
+  beforeEach(() => {
+    jest.resetModules();
+    ({ setEnv, setClientFactory } = require('../openaiClient'));
+    setEnv('ollama');
+    setClientFactory(() => openaiInstance);
+    app = require('../server');
+  });
+
+  it('returns generate completion', async () => {
+    const axios = require('axios');
+    axios.post = jest.fn().mockResolvedValueOnce({ data: { response: 'hi' } });
+    const res = await request(app).post('/api/generate').send({ prompt: 'hi', env: 'ollama' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reply).toBe('hi');
+    expect(axios.post).toHaveBeenCalled();
+  });
+
+  it('shows model info', async () => {
+    const axios = require('axios');
+    axios.post = jest.fn().mockResolvedValueOnce({ data: { modelfile: 'abc' } });
+    const res = await request(app).post('/api/show').send({ model: 'm1' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.info.modelfile).toBe('abc');
+    expect(axios.post).toHaveBeenCalled();
+  });
+});
+

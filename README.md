@@ -82,3 +82,12 @@ functions. Two example tools are provided:
 Use the gear icon in the top right to access **Update** and **Shutdown** actions. The **Update** option triggers `/api/update` and performs a `git pull` so you can update the repository from the browser.
 
 The Ollama backend uses the official Jinja template from the `deepseek-r1-tool-calling` repository to format prompts. Tool responses are parsed and executed server-side before the final reply is generated.
+
+## Additional Ollama Endpoints
+
+Two helper routes are exposed for accessing the Ollama API directly:
+
+- `POST /api/generate` – wraps Ollama's [`/api/generate` endpoint](https://raw.githubusercontent.com/ollama/ollama/main/docs/api.md) to return a single completion for a prompt. Pass `{ "prompt": "text", "env": "ollama" }` and the server will respond with `{ "reply": "..." }`.
+- `POST /api/show` – calls Ollama's [`/api/show` endpoint](https://raw.githubusercontent.com/ollama/ollama/main/docs/api.md) and returns the model metadata. Provide `{ "model": "name" }` to receive `{ "info": {...} }`.
+
+These routes require `env: "ollama"` and are useful for inspecting models or generating standalone completions.
