@@ -59,6 +59,20 @@ const tools = [
         required: ['to', 'subject', 'body']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_web',
+      description: 'Realiza uma busca na web e retorna resultados resumidos.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Termo a ser pesquisado.' }
+        },
+        required: ['query']
+      }
+    }
   }
 ];
 
@@ -73,6 +87,20 @@ const availableFunctions = {
   },
   send_email: async (to, subject, body) => {
     return { status: 'success', message: `Email para ${to} enviado com sucesso.` };
+  },
+  search_web: async (query) => {
+    try {
+      const { data } = await axios.get('https://api.duckduckgo.com/', {
+        params: { q: query, format: 'json', no_html: 1, skip_disambig: 1 }
+      });
+      const results = (data.RelatedTopics || [])
+        .filter(t => t.Text && t.FirstURL)
+        .slice(0, 3)
+        .map(t => ({ title: t.Text, url: t.FirstURL }));
+      return { results };
+    } catch (err) {
+      return { error: 'Search failed' };
+    }
   }
 };
 
