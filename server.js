@@ -20,7 +20,7 @@ function isLocal(req) {
 }
 
 app.post('/api/chat/stream', async (req, res) => {
-  const { message, env, model } = req.body;
+  const { message, env } = req.body;
   if (!message) {
     console.log('POST /api/chat/stream missing message');
     return res.status(400).json({ error: 'Message is required' });
@@ -31,7 +31,7 @@ app.post('/api/chat/stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.flushHeaders();
-    for await (const chunk of sendMessageStream(message, [], { env, model })) {
+    for await (const chunk of sendMessageStream(message, [], { env })) {
       res.write(`data: ${chunk}\n\n`);
     }
     res.write('data: [DONE]\n\n');
@@ -43,14 +43,14 @@ app.post('/api/chat/stream', async (req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-  const { message, env, model } = req.body;
+  const { message, env } = req.body;
   if (!message) {
     console.log('POST /api/chat missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
   try {
     console.log(`POST /api/chat: ${message}`);
-    const reply = await sendMessage(message, [], { env, model });
+    const reply = await sendMessage(message, [], { env });
     console.log(`reply: ${reply}`);
     res.json({ reply });
   } catch (err) {

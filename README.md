@@ -9,16 +9,16 @@ This project is a simple chat application built with React that interacts with t
    npm install
    ```
 2. Provide your OpenAI API key via the `OPENAI_API_KEY` environment variable.
-3. (Optional) Configure these environment variables before starting:
-   - `LLM_ENV` – set to `openai` to use OpenAI instead of Ollama (defaults to `ollama`).
-   - `OLLAMA_MODEL` – override the default Ollama model.
+3. (Optional) Set `LLM_ENV` to `openai` or `ollama` before starting to choose the default provider.
 4. Start the server:
    ```bash
    npm start
    ```
    The server starts immediately using the environment variables you set.
 5. Open `http://localhost:3000` in your browser.
-6. Choose `OpenAI` or `Ollama` in the environment drop-down. When selected, available models are fetched automatically and you must pick one before sending messages.
+6. Open the chat UI and pick `OpenAI` or `Ollama` in the provider drop-down before sending any message. The input box and Send button remain disabled until a provider is chosen.
+   - `OpenAI` always uses the inexpensive `gpt-3.5-turbo` model.
+   - `Ollama` always uses the `deepseek-r1:8b` model.
 
 ## Streaming
 

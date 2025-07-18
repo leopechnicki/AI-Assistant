@@ -43,16 +43,13 @@ function formatText(text) {
 
 function ChatApp() {
   const [tabs, setTabs] = React.useState([
-    { messages: [], env: 'ollama', model: '' }
+    { messages: [], env: '' }
   ]);
   const [activeTab, setActiveTab] = React.useState(0);
   const inputRef = React.useRef(null);
   const fileRef = React.useRef(null);
   const envRef = React.useRef(null);
-  const modelRef = React.useRef(null);
   const messagesRef = React.useRef(null);
-  const [models, setModels] = React.useState([]);
-  const [modelError, setModelError] = React.useState('');
   const [showMenu, setShowMenu] = React.useState(false);
 
   const currentTab = tabs[activeTab];
@@ -72,38 +69,13 @@ function ChatApp() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [currentTab.messages]);
 
-  const loadModels = async env => {
-    setModelError('');
-    try {
-      const res = await fetch(`/api/models?env=${env}`);
-      const data = await res.json();
-      setModels(data.models || []);
-      if (modelRef.current) {
-        modelRef.current.value = '';
-        onModelChange();
-      }
-      if (!data.models || data.models.length === 0) {
-        setModelError('No models available');
-      }
-    } catch (err) {
-      setModelError('Failed to load models');
-      setModels([]);
-    }
-  };
-
-  React.useEffect(() => {
-    if (envRef.current) {
-      loadModels(envRef.current.value);
-    }
-  }, []);
-
   const sendText = async () => {
     const input = inputRef.current;
     const fileInput = fileRef.current;
     const text = input.value.trim();
     const file = fileInput.files[0];
     if (!text && !file) return;
-    if (!modelRef.current.value) return;
+    if (!envRef.current.value) return;
     if (file) {
       const reader = new FileReader();
       const data = await new Promise(r => { reader.onload = () => r(reader.result); });
@@ -122,16 +94,16 @@ function ChatApp() {
     addMessage('user', text);
     input.value = '';
     const env = envRef.current.value;
-    const model = modelRef.current.value;
+    if (!env) return;
     setTabs(prev => {
       const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], env, model };
+      copy[activeTab] = { ...copy[activeTab], env };
       return copy;
     });
     const res = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, env, model })
+      body: JSON.stringify({ message: text, env })
     });
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -168,14 +140,14 @@ function ChatApp() {
   const switchTab = idx => {
     setTabs(prev => {
       const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], env: envRef.current.value, model: modelRef.current.value };
+      copy[activeTab] = { ...copy[activeTab], env: envRef.current.value };
       return copy;
     });
     setActiveTab(idx);
   };
 
   const addTab = () => {
-    setTabs(prev => [...prev, { messages: [], env: 'ollama', model: '' }]);
+    setTabs(prev => [...prev, { messages: [], env: '' }]);
     setActiveTab(tabs.length);
   };
 
@@ -190,11 +162,12 @@ function ChatApp() {
   };
 
   React.useEffect(() => {
-    if (!envRef.current || !modelRef.current) return;
+    if (!envRef.current) return;
     envRef.current.value = tabs[activeTab].env;
-    modelRef.current.value = tabs[activeTab].model;
-    loadModels(tabs[activeTab].env);
-    onModelChange();
+    const disable = !tabs[activeTab].env;
+    if (inputRef.current) inputRef.current.disabled = disable;
+    const sendBtn = document.getElementById('send');
+    if (sendBtn) sendBtn.disabled = disable;
   }, [activeTab, tabs]);
 
   const shutdown = async () => {
@@ -217,26 +190,17 @@ function ChatApp() {
   };
 
   const onEnvChange = e => {
-    loadModels(e.target.value);
     setTabs(prev => {
       const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], env: e.target.value, model: '' };
+      copy[activeTab] = { ...copy[activeTab], env: e.target.value };
       return copy;
     });
+    const disable = !e.target.value;
+    if (inputRef.current) inputRef.current.disabled = disable;
+    const sendBtn = document.getElementById('send');
+    if (sendBtn) sendBtn.disabled = disable;
   };
 
-  const onModelChange = () => {
-    if (!modelRef.current || !inputRef.current) return;
-    const value = modelRef.current.value;
-    inputRef.current.disabled = !value;
-    const sendBtn = document.getElementById('send');
-    if (sendBtn) sendBtn.disabled = !value;
-    setTabs(prev => {
-      const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], model: value };
-      return copy;
-    });
-  };
 
   const toggleMenu = () => setShowMenu(!showMenu);
 
@@ -250,7 +214,7 @@ function ChatApp() {
             onClick: () => switchTab(i),
             className: cn('px-2 py-1 rounded cursor-pointer', i === activeTab ? 'bg-blue-600 text-white' : 'bg-gray-200')
           }, [
-            `Tab ${i + 1} (${t.model || 'default'})`,
+            `Tab ${i + 1} (${t.env || 'unset'})`,
             tabs.length > 1 ? React.createElement('button', {
               onClick: e => { e.stopPropagation(); closeTab(i); },
               className: 'ml-1 text-xs'
@@ -306,17 +270,11 @@ function ChatApp() {
           ]
         )
       ),
-      React.createElement('select', { id: 'env', ref: envRef, className: 'border rounded-md p-2 text-sm', onChange: onEnvChange, defaultValue: 'ollama' }, [
+      React.createElement('select', { id: 'env', ref: envRef, className: 'border rounded-md p-2 text-sm', onChange: onEnvChange, defaultValue: '' }, [
+        React.createElement('option', { key: 'none', value: '' }, 'Select provider'),
         React.createElement('option', { key: 'ollama', value: 'ollama' }, 'Ollama'),
         React.createElement('option', { key: 'openai', value: 'openai' }, 'OpenAI')
       ]),
-      React.createElement(
-        'select',
-        { id: 'model', ref: modelRef, onChange: onModelChange, className: 'border rounded-md p-2 text-sm w-32' },
-        [React.createElement('option', { key: 'none', value: '' }, 'Select model'),
-         ...models.map(m => React.createElement('option', { key: m, value: m }, m))]
-      ),
-      modelError && React.createElement('span', { className: 'text-xs text-red-600' }, modelError),
       React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm', disabled: true }),
       React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90', disabled: true }, 'Send'),
       showMenu && React.createElement('div', { className: 'absolute right-0 top-10 bg-white border rounded shadow p-2 space-y-1' }, [
