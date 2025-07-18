@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe('POST /api/chat', () => {
   it('returns reply', async () => {
-    const res = await request(app).post('/api/chat').send({ message: 'hi' });
+    const res = await request(app).post('/api/chat').send({ message: 'hi', env: 'openai' });
     expect(res.statusCode).toBe(200);
     expect(res.body.reply).toBe('mock reply');
   });
@@ -45,7 +45,7 @@ describe('POST /api/chat', () => {
     setEnv('local');
     setClientFactory(() => openaiInstance);
     app = require('../server');
-    const res = await request(app).post('/api/chat').send({ message: 'hi' });
+    const res = await request(app).post('/api/chat').send({ message: 'hi', env: 'local' });
     expect(res.statusCode).toBe(200);
     expect(res.body.reply).toBe('device');
     expect(broadcast).toHaveBeenCalledWith('hi');
@@ -59,13 +59,13 @@ describe('POST /api/chat', () => {
 
   it('returns 413 for large payloads', async () => {
     const bigMessage = 'a'.repeat(1024 * 2100); // >2 MB
-    const res = await request(app).post('/api/chat').send({ message: bigMessage });
+    const res = await request(app).post('/api/chat').send({ message: bigMessage, env: 'openai' });
     expect(res.statusCode).toBe(413);
   });
 
   it('returns 500 when OpenAI fails', async () => {
     createMock.mockRejectedValueOnce(new Error('fail'));
-    const res = await request(app).post('/api/chat').send({ message: 'hi' });
+    const res = await request(app).post('/api/chat').send({ message: 'hi', env: 'openai' });
     expect(res.statusCode).toBe(500);
   });
 });
@@ -79,7 +79,7 @@ describe('POST /api/chat/stream', () => {
     createMock.mockResolvedValueOnce(gen());
     const res = await request(app)
       .post('/api/chat/stream')
-      .send({ message: 'hi' });
+      .send({ message: 'hi', env: 'openai' });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/event-stream/);
     expect(res.text).toContain('data: a');

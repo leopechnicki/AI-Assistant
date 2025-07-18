@@ -45,6 +45,8 @@ function ChatApp() {
   const [messages, setMessages] = React.useState([]);
   const inputRef = React.useRef(null);
   const fileRef = React.useRef(null);
+  const envRef = React.useRef(null);
+  const modelRef = React.useRef(null);
   const messagesRef = React.useRef(null);
 
   const addMessage = (role, text) => {
@@ -79,10 +81,12 @@ function ChatApp() {
     }
     addMessage('user', text);
     input.value = '';
+    const env = envRef.current.value;
+    const model = modelRef.current.value;
     const res = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message: text, env, model })
     });
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -187,6 +191,12 @@ function ChatApp() {
           ]
         )
       ),
+      React.createElement('select', { id: 'env', ref: envRef, className: 'border rounded-md p-2 text-sm' }, [
+        React.createElement('option', { key: 'openai', value: 'openai' }, 'openai'),
+        React.createElement('option', { key: 'ollama', value: 'ollama' }, 'ollama'),
+        React.createElement('option', { key: 'local', value: 'local' }, 'local')
+      ]),
+      React.createElement('input', { id: 'model', ref: modelRef, placeholder: 'model', className: 'border rounded-md p-2 text-sm w-24' }),
       React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm' }),
       React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
       React.createElement(Button, { id: 'reset', onClick: resetConversation, className: 'bg-yellow-600 hover:bg-yellow-600/90' }, 'New'),

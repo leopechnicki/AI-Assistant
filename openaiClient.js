@@ -112,30 +112,33 @@ function getEnv() {
   return env;
 }
 
-async function sendMessage(message, devices = []) {
+async function sendMessage(message, devices = [], options = {}) {
   let result = '';
-  for await (const part of sendMessageStream(message, devices)) {
+  for await (const part of sendMessageStream(message, devices, options)) {
     result += part;
   }
   return result;
 }
 
-async function* sendMessageStream(message, devices = []) {
-  if (env === 'local') {
+async function* sendMessageStream(message, devices = [], options = {}) {
+  const reqEnv = options.env ?? env;
+  const reqModel = options.model;
+
+  if (reqEnv === 'local') {
     const mcp = new MCP(devices);
     const reply = await mcp.broadcast(message);
     yield reply.join(', ');
     return;
   }
 
-  if (env === 'ollama') {
+  if (reqEnv === 'ollama') {
     const currentMessages = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: message }
     ];
 
     const response = await axios.post('http://localhost:11434/api/chat', {
-      model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+      model: reqModel || process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
       messages: currentMessages,
       tools,
       stream: false
@@ -156,7 +159,7 @@ async function* sendMessageStream(message, devices = []) {
       }
       currentMessages.push(...toolOutputs);
       const final = await axios.post('http://localhost:11434/api/chat', {
-        model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+        model: reqModel || process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
         messages: currentMessages,
         stream: false
       });
@@ -169,7 +172,7 @@ async function* sendMessageStream(message, devices = []) {
 
   const openai = createClient();
   const stream = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: reqModel || 'gpt-3.5-turbo',
     messages: [{ role: 'user', content: message }],
     stream: true
   });
