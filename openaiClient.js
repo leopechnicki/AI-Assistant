@@ -136,23 +136,46 @@ function parseOllamaToolCalls(text) {
 }
 
 async function executeToolCalls(provider, currentMessages, msg, model) {
-  if (!msg.tool_calls || !msg.tool_calls.length) {
+  // Skip tool execution when no tool calls are present
+  if (!Array.isArray(msg.tool_calls) || msg.tool_calls.length === 0) {
+    console.log('No tool calls found in assistant reply:', JSON.stringify(msg));
     return msg.content || '';
   }
+
+  console.log('Processing tool calls from assistant:', JSON.stringify(msg.tool_calls));
+
   const toolOutputs = [];
+  currentMessages.push(msg); // include assistant response before any tool messages
+
   for (const call of msg.tool_calls) {
+    if (!call.id) {
+      console.log('Skipping tool call without id:', JSON.stringify(call));
+      continue;
+    }
     const fn = availableFunctions[call.function.name];
     const args = typeof call.function.arguments === 'string'
       ? JSON.parse(call.function.arguments)
       : call.function.arguments;
+
     if (fn) {
       const out = await fn(...Object.values(args));
       toolOutputs.push({ role: 'tool', content: JSON.stringify(out), tool_call_id: call.id });
     } else {
-      toolOutputs.push({ role: 'tool', content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }), tool_call_id: call.id });
+      toolOutputs.push({
+        role: 'tool',
+        content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }),
+        tool_call_id: call.id
+      });
     }
   }
-  currentMessages.push(msg, ...toolOutputs);
+
+  if (!toolOutputs.length) {
+    console.log('No valid tool calls to execute.');
+    return msg.content || '';
+  }
+
+  currentMessages.push(...toolOutputs);
+  console.log('Current messages for provider:', JSON.stringify(currentMessages));
   if (provider === 'ollama') {
     const final = await axios.post('http://localhost:11434/api/chat', {
       model,
@@ -204,6 +227,11 @@ async function* sendMessageStream(message, devices = [], options = {}) {
   const model = getModelForEnv(reqEnv);
   if (!model && reqEnv !== 'local') {
     throw new Error('Invalid provider');
+  }
+
+  console.log(`Using model ${model} for environment ${reqEnv}`);
+  if (reqEnv === 'ollama' && model && !/tool.*calling/i.test(model)) {
+    console.warn(`Model ${model} may not support tool calling`);
   }
 
   if (reqEnv === 'local') {
