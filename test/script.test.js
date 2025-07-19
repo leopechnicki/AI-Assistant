@@ -12,19 +12,26 @@ global.TextDecoder = class { decode(v){ return typeof v === 'string' ? v : Buffe
 beforeEach(() => {
   document.body.innerHTML = '<div id="app"></div>';
   fetch.mockClear();
-  global.alert = jest.fn();
+  console.error = jest.fn();
 });
 
 const flush = () => new Promise(r => setTimeout(r,0));
 
-test('input disabled until provider selected', async () => {
+test('think checkbox enabled by default', async () => {
   setupChat(document);
   await flush();
-  const env = document.getElementById('env');
-  expect(env.value).toBe('');
-  expect(document.getElementById('input').disabled).toBe(true);
-  env.value = 'openai';
-  env.dispatchEvent(new Event('change', { bubbles: true }));
+  document.getElementById('settings-btn').click();
   await flush();
-  expect(document.getElementById('input').disabled).toBe(false);
+  const cb = document.querySelector('input[type="checkbox"]');
+  expect(cb.checked).toBe(true);
+});
+
+test('settings menu toggles', async () => {
+  setupChat(document);
+  await flush();
+  const btn = document.getElementById('settings-btn');
+  expect(document.getElementById('settings-menu')).toBeNull();
+  btn.click();
+  await flush();
+  expect(document.getElementById('settings-menu')).not.toBeNull();
 });

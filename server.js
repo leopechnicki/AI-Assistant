@@ -14,7 +14,7 @@ const {
   listModels,
   generateCompletion,
   showModel
-} = require('./openaiClient');
+} = require('./ollamaClient');
 const { exec } = require('child_process');
 
 function getShutdownCommand() {
@@ -27,14 +27,14 @@ function isLocal(req) {
 }
 
 app.post('/api/chat/stream', async (req, res) => {
-  const { message, env } = req.body;
+  const { message, env = 'ollama' } = req.body;
   if (!message) {
     console.log('POST /api/chat/stream missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
-  if (!env || !['openai', 'ollama', 'local'].includes(env)) {
-    console.log('POST /api/chat/stream missing or invalid provider');
-    return res.status(400).json({ error: 'Provider is required' });
+  if (!['ollama', 'local'].includes(env)) {
+    console.log('POST /api/chat/stream invalid provider');
+    return res.status(400).json({ error: 'Invalid provider' });
   }
 
   try {
@@ -55,14 +55,14 @@ app.post('/api/chat/stream', async (req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-  const { message, env } = req.body;
+  const { message, env = 'ollama' } = req.body;
   if (!message) {
     console.log('POST /api/chat missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
-  if (!env || !['openai', 'ollama', 'local'].includes(env)) {
-    console.log('POST /api/chat missing or invalid provider');
-    return res.status(400).json({ error: 'Provider is required' });
+  if (!['ollama', 'local'].includes(env)) {
+    console.log('POST /api/chat invalid provider');
+    return res.status(400).json({ error: 'Invalid provider' });
   }
   try {
     console.log(`POST /api/chat: ${message}`);
@@ -76,17 +76,13 @@ app.post('/api/chat', async (req, res) => {
 });
 
 app.post('/api/generate', async (req, res) => {
-  const { prompt, env } = req.body;
+  const { prompt } = req.body;
   if (!prompt) {
     console.log('POST /api/generate missing prompt');
     return res.status(400).json({ error: 'prompt is required' });
   }
-  if (env !== 'ollama') {
-    console.log('POST /api/generate invalid env');
-    return res.status(400).json({ error: 'env must be ollama' });
-  }
   try {
-    const reply = await generateCompletion(prompt, { env });
+    const reply = await generateCompletion(prompt); 
     res.json({ reply });
   } catch (err) {
     console.error('ollama generate failed', err);
@@ -110,9 +106,6 @@ app.post('/api/file', async (req, res) => {
   if (!name || !content) {
     console.log('POST /api/file missing file');
     return res.status(400).json({ error: 'File is required' });
-  }
-  if (getEnv() === 'openai') {
-    return res.status(400).json({ error: 'File upload not supported in OpenAI mode' });
   }
   try {
     console.log(`Received file ${name}`);
@@ -150,12 +143,8 @@ app.post('/api/update', (req, res) => {
 });
 
 app.get('/api/models', async (req, res) => {
-  const env = req.query.env;
-  if (!env) {
-    return res.status(400).json({ error: 'env is required' });
-  }
   try {
-    const models = await listModels(env);
+    const models = await listModels();
     res.json({ models });
   } catch (err) {
     res.status(500).json({ error: err.message });
