@@ -275,8 +275,8 @@ function ChatApp() {
         React.createElement('option', { key: 'ollama', value: 'ollama' }, 'Ollama'),
         React.createElement('option', { key: 'openai', value: 'openai' }, 'OpenAI')
       ]),
-      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm', disabled: true }),
-      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90', disabled: true }, 'Send'),
+      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm', disabled: !currentTab.env }),
+      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90', disabled: !currentTab.env }, 'Send'),
       showMenu && React.createElement('div', { className: 'absolute right-0 top-10 bg-white border rounded shadow p-2 space-y-1' }, [
         React.createElement('button', { key: 'update', onClick: updateAssistant, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Update'),
         React.createElement('button', { key: 'shutdown', onClick: shutdown, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Shutdown')

@@ -152,7 +152,7 @@ async function executeToolCalls(provider, currentMessages, msg, model) {
       toolOutputs.push({ role: 'tool', content: JSON.stringify({ error: `Function ${call.function.name} not implemented` }), tool_call_id: call.id });
     }
   }
-  currentMessages.push(...toolOutputs);
+  currentMessages.push(msg, ...toolOutputs);
   if (provider === 'ollama') {
     const final = await axios.post('http://localhost:11434/api/chat', {
       model,
