@@ -5,7 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const DEFAULT_OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'MFDoom/deepseek-r1-tool-calling:8b';
 const DEFAULT_OPENAI_MODEL = 'gpt-3.5-turbo-1106';
-const OLLAMA_TEMPLATE = fs.readFileSync(path.join(__dirname, 'templates', 'deepseek-tool.jinja'), 'utf8');
+const OLLAMA_TEMPLATE = fs.readFileSync(
+  path.join(__dirname, 'templates', 'deepseek-tool.jinja'),
+  'utf8'
+);
+const BEGIN_MARKER = '<|tool▁calls▁begin|>';
+const END_MARKER = '<|tool▁calls▁end|>';
 
 let createClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -108,6 +113,28 @@ const availableFunctions = {
   }
 };
 
+function parseOllamaToolCalls(text) {
+  const start = text.indexOf(BEGIN_MARKER);
+  const end = text.indexOf(END_MARKER);
+  if (start === -1 || end === -1) return null;
+  const block = text.slice(start + BEGIN_MARKER.length, end).trim();
+  if (!block) return null;
+  const lines = block.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const calls = [];
+  for (const line of lines) {
+    try {
+      const fn = JSON.parse(line);
+      calls.push({
+        id: String(calls.length),
+        function: { name: fn.name, arguments: fn.parameters }
+      });
+    } catch (err) {
+      return null;
+    }
+  }
+  return calls;
+}
+
 async function executeToolCalls(provider, currentMessages, msg, model) {
   if (!msg.tool_calls || !msg.tool_calls.length) {
     return msg.content || '';
@@ -191,21 +218,37 @@ async function* sendMessageStream(message, devices = [], options = {}) {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: message }
     ];
-    let response;
-    try {
-      response = await axios.post('http://localhost:11434/api/chat', {
-        model,
-        messages: currentMessages,
-        tools,
-        stream: false,
-        template: OLLAMA_TEMPLATE
-      });
-    } catch (err) {
-      const msg = err.response?.data?.error || err.message;
-      throw new Error(`Ollama request failed: ${msg}`);
+
+    async function requestOllama(attempt = 0) {
+      try {
+        const res = await axios.post('http://localhost:11434/api/chat', {
+          model,
+          messages: currentMessages,
+          tools,
+          stream: false,
+          template: OLLAMA_TEMPLATE
+        });
+        const msg = res.data.message;
+        const calls = parseOllamaToolCalls(msg.content || '');
+        if (msg.content?.includes(BEGIN_MARKER) && !calls) {
+          if (attempt < 1) {
+            currentMessages.push({
+              role: 'system',
+              content: 'The previous tool JSON was invalid. Please retry.'
+            });
+            return requestOllama(attempt + 1);
+          }
+          throw new Error('Invalid tool call JSON from Ollama');
+        }
+        if (calls) msg.tool_calls = calls;
+        return msg;
+      } catch (err) {
+        const msg = err.response?.data?.error || err.message;
+        throw new Error(`Ollama request failed: ${msg}`);
+      }
     }
 
-    const msg = response.data.message;
+    const msg = await requestOllama();
     const finalContent = await executeToolCalls('ollama', currentMessages, msg, model);
     if (finalContent) yield finalContent;
     return;
@@ -246,22 +289,42 @@ async function chatWithOllamaTools(userMessage, history = []) {
   currentMessages = currentMessages.concat(history);
   currentMessages.push({ role: 'user', content: userMessage });
 
-  let response;
-  try {
-    response = await axios.post('http://localhost:11434/api/chat', {
-      model: getModelForEnv('ollama'),
-      messages: currentMessages,
-      tools,
-      stream: false,
-      template: OLLAMA_TEMPLATE
-    });
-  } catch (err) {
-    const msg = err.response?.data?.error || err.message;
-    throw new Error(`Ollama request failed: ${msg}`);
+  async function request(attempt = 0) {
+    try {
+      const res = await axios.post('http://localhost:11434/api/chat', {
+        model: getModelForEnv('ollama'),
+        messages: currentMessages,
+        tools,
+        stream: false,
+        template: OLLAMA_TEMPLATE
+      });
+      const msg = res.data.message;
+      const calls = parseOllamaToolCalls(msg.content || '');
+      if (msg.content?.includes(BEGIN_MARKER) && !calls) {
+        if (attempt < 1) {
+          currentMessages.push({
+            role: 'system',
+            content: 'The previous tool JSON was invalid. Please retry.'
+          });
+          return request(attempt + 1);
+        }
+        throw new Error('Invalid tool call JSON from Ollama');
+      }
+      if (calls) msg.tool_calls = calls;
+      return msg;
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message;
+      throw new Error(`Ollama request failed: ${msg}`);
+    }
   }
 
-  const msg = response.data.message;
-  return executeToolCalls('ollama', currentMessages, msg, getModelForEnv('ollama'));
+  const msg = await request();
+  return executeToolCalls(
+    'ollama',
+    currentMessages,
+    msg,
+    getModelForEnv('ollama')
+  );
 }
 
 async function listModels(targetEnv) {
@@ -311,5 +374,8 @@ module.exports = {
   chatWithOllamaTools,
   listModels,
   generateCompletion,
-  showModel
+  showModel,
+  parseOllamaToolCalls,
+  BEGIN_MARKER,
+  END_MARKER
 };

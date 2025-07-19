@@ -1,6 +1,17 @@
-{% if system_prompt %}{{ system_prompt }}
-
-{% endif %}{% for message in messages %}
+{% if system_prompt %}
+{{ system_prompt }}
+{% endif %}
+{% for message in messages %}
 {{ message.role }}: {{ message.content }}
 {% endfor %}
+{% if tools %}
+Available tools:
+{% for tool in tools %}
+- {{ tool.function.name }}: {{ tool.function.description }}
+{% endfor %}
+Return tool calls formatted as JSON objects like {"name":"function_name","parameters":{...}} wrapped in the markers:
+<|tool▁calls▁begin|>
+JSON
+<|tool▁calls▁end|>
+{% endif %}
 assistant:

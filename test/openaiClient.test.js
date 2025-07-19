@@ -162,3 +162,27 @@ test('showModel fetches model info', async () => {
   expect(info.modelfile).toBe('abc');
 });
 
+test('parseOllamaToolCalls extracts calls', () => {
+  const { parseOllamaToolCalls } = require('../openaiClient');
+  const txt = '<|tool▁calls▁begin|>\n{"name":"send_email","parameters":{"to":"a","subject":"s","body":"b"}}\n<|tool▁calls▁end|>';
+  const calls = parseOllamaToolCalls(txt);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].function.name).toBe('send_email');
+});
+
+test('ollama invalid tool json retries once', async () => {
+  const { BEGIN_MARKER, END_MARKER } = require('../openaiClient');
+  const badContent = BEGIN_MARKER + '{' + END_MARKER;
+  const bad = { data: { message: { content: badContent } } };
+  const goodContent = BEGIN_MARKER + '{"name":"send_email","parameters":{"to":"a","subject":"s","body":"b"}}\n' + END_MARKER;
+  const good = { data: { message: { content: goodContent } } };
+  const done = { data: { message: { content: 'ok' } } };
+  postMock
+    .mockResolvedValueOnce(bad)
+    .mockResolvedValueOnce(good)
+    .mockResolvedValueOnce(done);
+  const reply = await sendMessage('hi', [], { env: 'ollama' });
+  expect(postMock).toHaveBeenCalledTimes(3);
+  expect(reply).toBe('ok');
+});
+
