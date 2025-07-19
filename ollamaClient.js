@@ -6,51 +6,9 @@ const BASE = process.env.OLLAMA_BASE || 'http://localhost:11434';
 
 const systemPrompt = 'You are a helpful assistant.';
 
-const tools = [
-  {
-    type: 'function',
-    function: {
-      name: 'get_current_weather',
-      description: 'Get current weather for a location.',
-      parameters: {
-        type: 'object',
-        properties: {
-          location: { type: 'string', description: 'City name.' },
-          unit: { type: 'string', enum: ['celsius', 'fahrenheit'], description: 'Temperature unit.' }
-        },
-        required: ['location']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'send_email',
-      description: 'Send an email to a recipient.',
-      parameters: {
-        type: 'object',
-        properties: {
-          to: { type: 'string', description: 'Recipient address.' },
-          subject: { type: 'string', description: 'Email subject.' },
-          body: { type: 'string', description: 'Email body.' }
-        },
-        required: ['to', 'subject', 'body']
-      }
-    }
-  }
-];
+const tools = [];
 
-const availableFunctions = {
-  get_current_weather: async (location, unit = 'celsius') => {
-    const data = {
-      Warsaw: { temperature: '22C', condition: 'cloudy' }
-    };
-    return data[location] || { error: 'unknown location' };
-  },
-  send_email: async (to, subject, body) => {
-    return { status: 'sent', to, subject };
-  }
-};
+const availableFunctions = {};
 
 async function readStream(res) {
   let buffer = '';

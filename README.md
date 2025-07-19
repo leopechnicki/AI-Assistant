@@ -24,13 +24,14 @@ The application talks to Ollama at `http://localhost:11434/api`. If you need to 
 
 ## Tool Calling
 
-Requests to Ollama always include `stream: true`. Tool calls follow this flow:
+Requests to Ollama always include `stream: true`. When a model decides to call a
+tool, the flow looks like this:
 
 1. User message is sent:
    ```json
-   { "role": "user", "content": "What is the weather in Warsaw?" }
+   { "role": "user", "content": "Hello" }
    ```
-2. Ollama responds with tool calls:
+2. Ollama may respond with tool calls:
    ```json
    {
      "role": "assistant",
@@ -39,21 +40,18 @@ Requests to Ollama always include `stream: true`. Tool calls follow this flow:
        {
          "id": "toolcall-abc123",
          "type": "function",
-         "function": {
-           "name": "getWeather",
-           "arguments": "{\"location\": \"Warsaw\"}"
-         }
+         "function": { "name": "someFunction", "arguments": "{}" }
        }
      ]
    }
    ```
-3. The application invokes the tool and replies using the same `tool_call_id`:
+3. The application executes the tool locally and replies using the same `tool_call_id`:
    ```json
    {
      "role": "tool",
      "tool_call_id": "toolcall-abc123",
-     "name": "getWeather",
-     "content": "{\"temperature\": \"22C\", \"condition\": \"cloudy\"}"
+     "name": "someFunction",
+     "content": "{\"result\":true}"
    }
    ```
 4. Ollama returns the final assistant message which is streamed to the UI.
