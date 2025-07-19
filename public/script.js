@@ -8,9 +8,7 @@ if (typeof require !== 'undefined') {
 }
 
 function cn() {
-  return Array.from(arguments)
-    .filter(Boolean)
-    .join(' ');
+  return Array.from(arguments).filter(Boolean).join(' ');
 }
 
 const Button = React.forwardRef(function Button({ className, ...props }, ref) {
@@ -28,13 +26,13 @@ const Button = React.forwardRef(function Button({ className, ...props }, ref) {
   );
 });
 
-function formatText(text) {
+function formatText(text, showThink) {
   const parts = text.split(/(<think>|<\/think>)/);
   let thinking = false;
   return parts.map((p, i) => {
     if (p === '<think>') { thinking = true; return null; }
     if (p === '</think>') { thinking = false; return null; }
-    if (thinking) {
+    if (thinking && showThink) {
       return React.createElement('span', { key: i, className: 'italic text-gray-500' }, p);
     }
     return p;
@@ -42,32 +40,21 @@ function formatText(text) {
 }
 
 function ChatApp() {
-  const [tabs, setTabs] = React.useState([
-    { messages: [], env: '' }
-  ]);
-  const [activeTab, setActiveTab] = React.useState(0);
+  const [messages, setMessages] = React.useState([]);
+  const [showMenu, setShowMenu] = React.useState(false);
+  const [showThink, setShowThink] = React.useState(true);
   const inputRef = React.useRef(null);
   const fileRef = React.useRef(null);
-  const envRef = React.useRef(null);
   const messagesRef = React.useRef(null);
-  const [showMenu, setShowMenu] = React.useState(false);
-
-  const currentTab = tabs[activeTab];
-
-  const addMessage = (role, text) => {
-    setTabs(prev => {
-      const copy = [...prev];
-      const tab = { ...copy[activeTab] };
-      tab.messages = [...tab.messages, { role, text }];
-      copy[activeTab] = tab;
-      return copy;
-    });
-  };
 
   React.useEffect(() => {
     const el = messagesRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [currentTab.messages]);
+  }, [messages]);
+
+  const addMessage = (role, text) => {
+    setMessages(prev => [...prev, { role, text }]);
+  };
 
   const sendText = async () => {
     const input = inputRef.current;
@@ -75,7 +62,6 @@ function ChatApp() {
     const text = input.value.trim();
     const file = fileInput.files[0];
     if (!text && !file) return;
-    if (!envRef.current.value) return;
     if (file) {
       const reader = new FileReader();
       const data = await new Promise(r => { reader.onload = () => r(reader.result); });
@@ -93,24 +79,17 @@ function ChatApp() {
     }
     addMessage('user', text);
     input.value = '';
-    const env = envRef.current.value;
-    if (!env) return;
-    setTabs(prev => {
-      const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], env };
-      return copy;
-    });
     const res = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, env })
+      body: JSON.stringify({ message: text })
     });
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let current = '';
     addMessage('assistant', '');
-    const idx = currentTab.messages.length + 1;
+    const idx = messages.length + 1;
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -123,167 +102,53 @@ function ChatApp() {
           const data = line.slice(5).trim();
           if (data === '[DONE]') continue;
           current += data + ' ';
-          setTabs(prev => {
-            const copy = [...prev];
-            const tab = { ...copy[activeTab] };
-            const msgs = [...tab.messages];
+          setMessages(prev => {
+            const msgs = [...prev];
             msgs[idx] = { role: 'assistant', text: current };
-            tab.messages = msgs;
-            copy[activeTab] = tab;
-            return copy;
+            return msgs;
           });
         }
       }
     }
   };
 
-  const switchTab = idx => {
-    setTabs(prev => {
-      const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], env: envRef.current.value };
-      return copy;
-    });
-    setActiveTab(idx);
-  };
-
-  const addTab = () => {
-    setTabs(prev => [...prev, { messages: [], env: '' }]);
-    setActiveTab(tabs.length);
-  };
-
-  const closeTab = idx => {
-    if (tabs.length === 1) return;
-    setTabs(prev => prev.filter((_, i) => i !== idx));
-    setActiveTab(prev => {
-      if (idx < prev) return prev - 1;
-      if (idx === prev) return idx > 0 ? idx - 1 : 0;
-      return prev;
-    });
-  };
-
-  React.useEffect(() => {
-    if (!envRef.current) return;
-    envRef.current.value = tabs[activeTab].env;
-    const disable = !tabs[activeTab].env;
-    if (inputRef.current) inputRef.current.disabled = disable;
-    const sendBtn = document.getElementById('send');
-    if (sendBtn) sendBtn.disabled = disable;
-  }, [activeTab, tabs]);
-
-  const shutdown = async () => {
-    if (!confirm('Are you sure…?')) return;
-    await fetch('/api/shutdown', { method: 'POST' });
-  };
-
-  const updateAssistant = async () => {
-    const res = await fetch('/api/update', { method: 'POST' });
-    const data = await res.json();
-    alert(data.reply || data.error);
-  };
-
-
-  const onKeyDown = e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendText();
-    }
-  };
-
-  const onEnvChange = e => {
-    setTabs(prev => {
-      const copy = [...prev];
-      copy[activeTab] = { ...copy[activeTab], env: e.target.value };
-      return copy;
-    });
-    const disable = !e.target.value;
-    if (inputRef.current) inputRef.current.disabled = disable;
-    const sendBtn = document.getElementById('send');
-    if (sendBtn) sendBtn.disabled = disable;
-  };
-
-
   const toggleMenu = () => setShowMenu(!showMenu);
 
-  return React.createElement('div', { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4 relative' },
+  return React.createElement(
+    'div',
+    { id: 'chat', className: 'max-w-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4 relative' },
     React.createElement('h1', { className: 'text-2xl font-bold mb-2' }, 'AI Assistant Chat'),
-    React.createElement('div', { id: 'tabs', className: 'flex gap-2 mb-2' },
-      [
-        ...tabs.map((t, i) =>
-          React.createElement('div', {
-            key: i,
-            onClick: () => switchTab(i),
-            className: cn('px-2 py-1 rounded cursor-pointer', i === activeTab ? 'bg-blue-600 text-white' : 'bg-gray-200')
-          }, [
-            `Tab ${i + 1} (${t.env || 'unset'})`,
-            tabs.length > 1 ? React.createElement('button', {
-              onClick: e => { e.stopPropagation(); closeTab(i); },
-              className: 'ml-1 text-xs'
-            }, 'x') : null
-          ])
-        ),
-        React.createElement('button', { id: 'add-tab', key: 'add', onClick: addTab, className: 'px-2 py-1 bg-green-200 rounded' }, '+')
-      ]
-    ),
-    React.createElement('ul', { className: 'text-xs list-disc pl-5 space-y-1' }, [
-      React.createElement('li', { key: 'w' }, 'Pergunte "Qual o clima em <cidade>?" para acionar a ferramenta de clima.'),
-      React.createElement('li', { key: 'e' }, 'Diga "Envie um email..." para usar o envio de emails.'),
-      React.createElement('li', { key: 'u' }, 'Use o botão Update para atualizar o assistente.')
-    ]),
     React.createElement('div', { id: 'messages', ref: messagesRef, className: 'border h-72 overflow-y-auto p-2 space-y-2' },
-      currentTab.messages.map((m, i) =>
-        React.createElement('div', { className: 'msg text-sm', key: i },
-          [
-            React.createElement('span', { className: cn(m.role === 'user' ? 'font-bold' : 'text-gray-700') }, `${m.role}:`),
-            ' ',
-            ...formatText(m.text)
-          ]
-        )
+      messages.map((m, i) =>
+        React.createElement('div', { className: 'msg text-sm', key: i }, [
+          React.createElement('span', { className: cn(m.role === 'user' ? 'font-bold' : 'text-gray-700') }, `${m.role}:`),
+          ' ',
+          ...formatText(m.text, showThink)
+        ])
       )
     ),
     React.createElement('div', { className: 'controls flex gap-2 items-center' },
       React.createElement('input', { type: 'file', id: 'file', ref: fileRef, accept: '.txt,image/*', className: 'hidden' }),
-      React.createElement(
-        'label',
-        {
-          htmlFor: 'file',
-          className:
-            'p-2 border rounded-md bg-gray-200 hover:bg-gray-300 cursor-pointer',
-          title: 'Upload file'
-        },
-        React.createElement(
-          'svg',
-          {
-            xmlns: 'http://www.w3.org/2000/svg',
-            viewBox: '0 0 20 20',
-            fill: 'currentColor',
-            className: 'w-5 h-5'
-          },
-          [
-            React.createElement('path', {
-              key: 'p1',
-              d: 'M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z'
-            }),
-            React.createElement('path', {
-              key: 'p2',
-              d: 'M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z'
-            })
-          ]
+      React.createElement('label', { htmlFor: 'file', className: 'p-2 border rounded-md bg-gray-200 hover:bg-gray-300 cursor-pointer', title: 'Upload file' },
+        React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 20 20', fill: 'currentColor', className: 'w-5 h-5' },
+          React.createElement('path', { d: 'M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z' }),
+          React.createElement('path', { d: 'M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z' })
         )
       ),
-      React.createElement('select', { id: 'env', ref: envRef, className: 'border rounded-md p-2 text-sm', onChange: onEnvChange, defaultValue: '' }, [
-        React.createElement('option', { key: 'none', value: '' }, 'Select provider'),
-        React.createElement('option', { key: 'ollama', value: 'ollama' }, 'Ollama'),
-        React.createElement('option', { key: 'openai', value: 'openai' }, 'OpenAI')
+      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); sendText(); } }, className: 'flex-1 border rounded-md p-2 text-sm' }),
+      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
+      showMenu && React.createElement('div', { key: 'menu', id: 'settings-menu', className: 'absolute right-2 top-10 bg-white border rounded shadow p-2 space-y-1' }, [
+        React.createElement('label', { key: 'think', className: 'flex gap-2 items-center cursor-pointer px-2 py-1 hover:bg-gray-100' }, [
+          React.createElement('input', { type: 'checkbox', checked: showThink, onChange: e => setShowThink(e.target.checked) }),
+          'Show thinking'
+        ]),
+        React.createElement('button', { key: 'update', onClick: () => fetch('/api/update', { method: 'POST' }).then(r => r.json()).then(d => alert(d.reply || d.error)), className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Update'),
+        React.createElement('button', { key: 'shutdown', onClick: () => { if (confirm('Are you sure?')) fetch('/api/shutdown', { method: 'POST' }); }, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Shutdown')
       ]),
-      React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown, className: 'flex-1 border rounded-md p-2 text-sm', disabled: !currentTab.env }),
-      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90', disabled: !currentTab.env }, 'Send'),
-      showMenu && React.createElement('div', { className: 'absolute right-0 top-10 bg-white border rounded shadow p-2 space-y-1' }, [
-        React.createElement('button', { key: 'update', onClick: updateAssistant, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Update'),
-        React.createElement('button', { key: 'shutdown', onClick: shutdown, className: 'block w-full text-left px-2 py-1 hover:bg-gray-100' }, 'Shutdown')
-      ]),
-      React.createElement('button', { onClick: toggleMenu, className: 'ml-auto p-2', title: 'Settings' },
+      React.createElement('button', { onClick: toggleMenu, className: 'p-2 ml-auto absolute right-2 top-2', title: 'Settings', id: 'settings-btn' },
         React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 20 20', fill: 'currentColor', className: 'w-5 h-5' },
-          React.createElement('path', { d: 'M10 2a2 2 0 012 2v1.09a6.967 6.967 0 012.53 1.07l.77-.77a2 2 0 112.83 2.83l-.77.77A6.967 6.967 0 0116.91 10H18a2 2 0 110 4h-1.09a6.967 6.967 0 01-1.07 2.53l.77.77a2 2 0 11-2.83 2.83l-.77-.77A6.967 6.967 0 0112 16.91V18a2 2 0 11-4 0v-1.09a6.967 6.967 0 01-2.53-1.07l-.77.77a2 2 0 11-2.83-2.83l.77-.77A6.967 6.967 0 013.09 12H2a2 2 0 110-4h1.09a6.967 6.967 0 011.07-2.53l-.77-.77a2 2 0 112.83-2.83l.77.77A6.967 6.967 0 018 3.09V2a2 2 0 012-2z' }))
+          React.createElement('path', { d: 'M10 2a2 2 0 012 2v1.09a6.967 6.967 0 012.53 1.07l.77-.77a2 2 0 112.83 2.83l-.77.77A6.967 6.967 0 0116.91 10H18a2 2 0 110 4h-1.09a6.967 6.967 0 01-1.07 2.53l.77.77a2 2 0 11-2.83 2.83l-.77-.77A6.967 6.967 0 0112 16.91V18a2 2 0 11-4 0v-1.09a6.967 6.967 0 01-2.53-1.07l-.77.77a2 2 0 11-2.83-2.83l.77-.77A6.967 6.967 0 013.09 12H2a2 2 0 110-4h1.09a6.967 6.967 0 011.07-2.53l-.77-.77a2 2 0 112.83-2.83l.77.77A6.967 6.967 0 018 3.09V2a2 2 0 012-2z' })
+        )
       )
     )
   );
