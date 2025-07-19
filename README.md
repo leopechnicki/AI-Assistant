@@ -81,7 +81,17 @@ functions. Two example tools are provided:
 
 Use the gear icon in the top right to access **Update** and **Shutdown** actions. The **Update** option triggers `/api/update` and performs a `git pull` so you can update the repository from the browser.
 
-The Ollama backend uses the official Jinja template from the `deepseek-r1-tool-calling` repository to format prompts. Tool responses are parsed and executed server-side before the final reply is generated.
+The Ollama backend uses the official Jinja chat template from the `deepseek-r1-tool-calling` model. The template injects the system prompt, lists available tools and instructs the assistant to return tool calls as JSON wrapped in `<|tool▁calls▁begin|>` and `<|tool▁calls▁end|>` markers. The server parses these blocks, executes the referenced functions and then sends the final reply. Invalid or empty tool calls trigger one retry before an error is returned.
+
+Example response when a tool is invoked:
+
+```text
+<|tool▁calls▁begin|>
+{"name":"get_current_weather","parameters":{"location":"Londres"}}
+<|tool▁calls▁end|>
+```
+
+To add your own tools edit `openaiClient.js` and modify the `tools` array and `availableFunctions` map. Restart the server for changes to take effect.
 
 ## Additional Ollama Endpoints
 
