@@ -1,5 +1,5 @@
 module.exports = {
   scripts: {
-    start: 'node start.js'
+    start: 'node server.js'
   }
 };

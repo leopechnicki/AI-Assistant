@@ -1,20 +1,47 @@
-const { execFileSync } = require('child_process');
+const { spawn } = require('child_process');
 
 /**
- * Run the DeepSeek model using Ollama.
- * @param {object} payload - must include `system`, `tools` and `messages`.
- * @returns {object} Parsed JSON response from the model.
+ * Runs the DeepSeek tool-calling model via Ollama.
+ * @param {string} system - System prompt for the model.
+ * @param {Array} tools - Tool definitions.
+ * @param {Array} messages - Conversation history including user input.
+ * @returns {Promise<object>} Resolves with parsed JSON response from the model.
  */
-function runDeepSeek(payload) {
-  const input = JSON.stringify(payload);
-  const output = execFileSync(
-    'ollama',
-    ['run', 'deepseek-r1-tool-calling:8b', '--json'],
-    { input, encoding: 'utf8' }
-  );
-  // The CLI may emit multiple JSON lines; parse the last one
-  const lines = output.trim().split(/\n+/);
-  return JSON.parse(lines[lines.length - 1]);
+async function runOllamaChat(system, tools, messages) {
+  const payload = { system, tools, messages };
+  console.log('model input', JSON.stringify(payload));
+  return new Promise((resolve, reject) => {
+    const child = spawn('ollama', ['run', 'deepseek-r1-tool-calling:8b', '--json']);
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', chunk => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', chunk => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', reject);
+
+    child.on('close', code => {
+      if (stderr) console.error('ollama stderr:', stderr.trim());
+      if (code !== 0) {
+        return reject(new Error(`ollama exited with code ${code}`));
+      }
+      try {
+        const lines = stdout.trim().split(/\n+/);
+        const last = lines[lines.length - 1];
+        const parsed = JSON.parse(last);
+        resolve(parsed);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    child.stdin.write(JSON.stringify(payload));
+    child.stdin.end();
+  });
 }
 
-module.exports = { runDeepSeek };
+module.exports = { runOllamaChat };

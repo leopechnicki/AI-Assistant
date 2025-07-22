@@ -8,14 +8,14 @@ const app = express();
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
 const {
-  sendMessage,
   sendMessageStream,
   listModels,
   generateCompletion,
   showModel
 } = require('./ollamaClient');
-const { runDeepSeek } = require('./ollamaWrapper');
+const { runOllamaChat } = require('./ollamaWrapper');
 const { exec } = require('child_process');
+const axios = require('axios');
 
 function getShutdownCommand() {
   return process.platform === 'win32' ? 'shutdown /s /t 0' : 'shutdown -h now';
@@ -39,8 +39,32 @@ const tools = [
       type: 'object',
       properties: {},
     }
+  },
+  {
+    name: 'get_weather',
+    description: 'Get current weather for a city',
+    parameters: {
+      type: 'object',
+      properties: {
+        city: { type: 'string', description: 'City name' }
+      },
+      required: ['city']
+    }
   }
 ];
+
+// Tool implementations used by the model
+function get_time() {
+  return new Date().toISOString();
+}
+
+async function get_weather({ city }) {
+  const key = process.env.WEATHER_API_KEY;
+  if (!key) throw new Error('Weather API key missing');
+  const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${encodeURIComponent(city)}?unitGroup=us&key=${key}&contentType=json`;
+  const res = await axios.get(url);
+  return res.data;
+}
 
 app.post('/api/chat/stream', async (req, res) => {
   const { message } = req.body;
@@ -76,42 +100,38 @@ app.post('/api/chat', async (req, res) => {
     console.log(`POST /api/chat: ${message}`);
     conversation.push({ role: 'user', content: message });
 
-    while (true) {
-      const result = runDeepSeek({
-        system: systemPrompt,
-        tools,
-        messages: conversation
-      });
+    const system = systemPrompt;
+    let messages = [{ role: 'system', content: system }, ...conversation];
+    let assistantResponse = await runOllamaChat(system, tools, messages);
+    console.log('model output', assistantResponse);
 
-      const reply = result.message || result;
-      const toolCall = reply.tool_calls && reply.tool_calls[0];
-
-      if (toolCall) {
-        console.log(`tool call: ${toolCall.name}`);
-        let output;
-        if (toolCall.name === 'get_time') {
-          output = { time: new Date().toISOString() };
+    while (assistantResponse.tool_calls && assistantResponse.tool_calls.length) {
+      const call = assistantResponse.tool_calls[0];
+      console.log('detected toolCall', call);
+      let result;
+      try {
+        if (call.name === 'get_time') {
+          result = get_time();
+        } else if (call.name === 'get_weather') {
+          result = await get_weather(call.parameters || {});
         } else {
-          output = { error: 'Unknown tool' };
+          result = { error: 'Unknown tool' };
         }
-        console.log(`tool response: ${JSON.stringify(output)}`);
-        conversation.push({
-          role: 'assistant',
-          content: reply.content || '',
-          tool_calls: [toolCall]
-        });
-        conversation.push({
-          role: 'tool',
-          name: toolCall.name,
-          content: JSON.stringify(output)
-        });
-        continue;
+      } catch (err) {
+        console.error('tool execution failed', err);
+        result = { error: err.message };
       }
-
-      conversation.push({ role: 'assistant', content: reply.content });
-      res.json({ reply: reply.content });
-      break;
+      console.log('tool result', result);
+      const assistantMsg = { role: 'assistant', content: assistantResponse.content || '', tool_calls: [call] };
+      const toolMsg = { role: 'tool', name: call.name, content: JSON.stringify(result) };
+      conversation.push(assistantMsg, toolMsg);
+      messages.push(assistantMsg, toolMsg);
+      assistantResponse = await runOllamaChat(system, tools, messages);
+      console.log('model output', assistantResponse);
     }
+
+    conversation.push({ role: 'assistant', content: assistantResponse.content });
+    res.json({ reply: assistantResponse.content });
   } catch (err) {
     console.error('request failed', err);
     res.status(500).json({ error: err.message });
