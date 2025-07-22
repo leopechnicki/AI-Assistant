@@ -22,6 +22,8 @@ This project is a small React application that communicates with a local Ollama 
 
 The application talks to Ollama at `http://localhost:11434/api`. By default it uses the `MFDoom/deepseek-r1-tool-calling:8b` model. Set `OLLAMA_MODEL` to use another model or `OLLAMA_BASE` if your Ollama server runs elsewhere.
 
+Set `WEATHER_API_KEY` with a Visual Crossing API key to enable the weather tool.
+
 ## Running Tests
 
 Execute all unit and integration tests with

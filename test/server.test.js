@@ -1,7 +1,9 @@
 const request = require('supertest');
 
+jest.mock('axios', () => ({ get: jest.fn(() => Promise.resolve({ data: {} })) }));
+
 let app;
-jest.mock('../ollamaWrapper', () => ({ runDeepSeek: jest.fn() }));
+jest.mock('../ollamaWrapper', () => ({ runOllamaChat: jest.fn() }));
 
 beforeEach(() => {
   jest.resetModules();
@@ -9,17 +11,18 @@ beforeEach(() => {
   client.sendMessage = jest.fn().mockResolvedValue('ok');
   client.sendMessageStream = jest.fn(async function* (){});
   const wrapper = require('../ollamaWrapper');
-  wrapper.runDeepSeek.mockReturnValue({ message: { content: 'ok' } });
+  wrapper.runOllamaChat.mockResolvedValue({ content: 'ok' });
+  process.env.WEATHER_API_KEY = 'test';
   app = require('../server');
 });
 
 test('POST /api/chat returns reply', async () => {
   const wrapper = require('../ollamaWrapper');
-  wrapper.runDeepSeek.mockReturnValue({ message: { content: 'ok' } });
+  wrapper.runOllamaChat.mockResolvedValue({ content: 'ok' });
   const res = await request(app).post('/api/chat').send({ message: 'hi' });
   expect(res.statusCode).toBe(200);
   expect(res.body.reply).toBe('ok');
-  expect(wrapper.runDeepSeek).toHaveBeenCalled();
+  expect(wrapper.runOllamaChat).toHaveBeenCalled();
 });
 
 test('POST /api/chat/stream streams reply', async () => {
