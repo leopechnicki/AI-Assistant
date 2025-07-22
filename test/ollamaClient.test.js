@@ -18,6 +18,6 @@ test('sendMessageStream yields content', async () => {
   axios.post.mockResolvedValueOnce(streamFor([JSON.stringify({ message: { content: 'hello' } }), JSON.stringify({ done: true })]));
   const { sendMessageStream } = require('../ollamaClient');
   const parts = [];
-  for await (const p of sendMessageStream('hi', [], { env: 'ollama' })) parts.push(p);
+  for await (const p of sendMessageStream('hi')) parts.push(p);
   expect(parts.join('')).toBe('hello');
 });
