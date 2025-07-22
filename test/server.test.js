@@ -1,22 +1,25 @@
 const request = require('supertest');
 
 let app;
+jest.mock('../ollamaWrapper', () => ({ runDeepSeek: jest.fn() }));
 
 beforeEach(() => {
   jest.resetModules();
   const client = require('../ollamaClient');
   client.sendMessage = jest.fn().mockResolvedValue('ok');
   client.sendMessageStream = jest.fn(async function* (){});
+  const wrapper = require('../ollamaWrapper');
+  wrapper.runDeepSeek.mockReturnValue({ message: { content: 'ok' } });
   app = require('../server');
 });
 
 test('POST /api/chat returns reply', async () => {
-  const client = require('../ollamaClient');
-  client.sendMessage.mockResolvedValue('ok');
+  const wrapper = require('../ollamaWrapper');
+  wrapper.runDeepSeek.mockReturnValue({ message: { content: 'ok' } });
   const res = await request(app).post('/api/chat').send({ message: 'hi' });
   expect(res.statusCode).toBe(200);
   expect(res.body.reply).toBe('ok');
-  expect(client.sendMessage).toHaveBeenCalled();
+  expect(wrapper.runDeepSeek).toHaveBeenCalled();
 });
 
 test('POST /api/chat/stream streams reply', async () => {
