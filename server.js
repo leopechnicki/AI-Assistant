@@ -14,6 +14,7 @@ const {
   generateCompletion,
   showModel
 } = require('./ollamaClient');
+const { runDeepSeek } = require('./ollamaWrapper');
 const { exec } = require('child_process');
 
 function getShutdownCommand() {
@@ -24,6 +25,22 @@ function isLocal(req) {
   const ip = req.ip || (req.connection && req.connection.remoteAddress) || '';
   return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
 }
+
+// In-memory conversation history for tool-calling chats
+const conversation = [];
+
+// Default system prompt and available tools
+const systemPrompt = 'You are a helpful assistant.';
+const tools = [
+  {
+    name: 'get_time',
+    description: 'Get the current server time',
+    parameters: {
+      type: 'object',
+      properties: {},
+    }
+  }
+];
 
 app.post('/api/chat/stream', async (req, res) => {
   const { message } = req.body;
@@ -57,9 +74,44 @@ app.post('/api/chat', async (req, res) => {
   }
   try {
     console.log(`POST /api/chat: ${message}`);
-    const reply = await sendMessage(message);
-    console.log(`reply: ${reply}`);
-    res.json({ reply });
+    conversation.push({ role: 'user', content: message });
+
+    while (true) {
+      const result = runDeepSeek({
+        system: systemPrompt,
+        tools,
+        messages: conversation
+      });
+
+      const reply = result.message || result;
+      const toolCall = reply.tool_calls && reply.tool_calls[0];
+
+      if (toolCall) {
+        console.log(`tool call: ${toolCall.name}`);
+        let output;
+        if (toolCall.name === 'get_time') {
+          output = { time: new Date().toISOString() };
+        } else {
+          output = { error: 'Unknown tool' };
+        }
+        console.log(`tool response: ${JSON.stringify(output)}`);
+        conversation.push({
+          role: 'assistant',
+          content: reply.content || '',
+          tool_calls: [toolCall]
+        });
+        conversation.push({
+          role: 'tool',
+          name: toolCall.name,
+          content: JSON.stringify(output)
+        });
+        continue;
+      }
+
+      conversation.push({ role: 'assistant', content: reply.content });
+      res.json({ reply: reply.content });
+      break;
+    }
   } catch (err) {
     console.error('request failed', err);
     res.status(500).json({ error: err.message });

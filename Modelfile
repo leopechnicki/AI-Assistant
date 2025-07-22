@@ -1,0 +1,4 @@
+FROM deepseek-r1:8b
+TEMPLATE templates/deepseek-tool.jinja
+PARAMETER temperature 0.6
+PARAMETER top_p 0.9

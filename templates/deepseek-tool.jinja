@@ -1,0 +1,25 @@
+{# Template for DeepSeek tool-calling with role handling and tool schema injection #}
+
+{# Render the conversation so far #}
+{% for m in messages %}
+  {% if m.role == 'system' %}
+{{ m.content }}
+  {% elif m.role == 'user' %}
+<|user|>
+{{ m.content }}
+  {% elif m.role == 'assistant' %}
+<|assistant|>
+{{ m.content }}
+  {% elif m.role == 'tool' %}
+<｜tool▁outputs▁begin｜>{{ m.name }}: {{ m.content }}<｜tool▁outputs▁end｜>
+  {% endif %}
+{% endfor %}
+
+{# Inject available tools for the model to call #}
+{% if tools %}
+<｜tool▁call▁begin｜>
+{{ tools | tojson }}
+<｜tool▁call▁end｜>
+{% endif %}
+
+<|assistant|>
