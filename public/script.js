@@ -11,11 +11,12 @@ function cn() {
   return Array.from(arguments).filter(Boolean).join(' ');
 }
 
-const Button = React.forwardRef(function Button({ className, ...props }, ref) {
+const Button = React.forwardRef(function Button({ className, type = 'button', ...props }, ref) {
   return React.createElement(
     'button',
     {
       ref,
+      type,
       className: cn(
         'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none px-3 py-2 bg-blue-600 text-white hover:bg-blue-600/90',
         className
@@ -112,7 +113,7 @@ function ChatApp() {
         )
       ),
       React.createElement('input', { id: 'input', ref: inputRef, placeholder: 'Type a message', onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); sendText(); } }, className: 'flex-1 border rounded-md p-2 text-sm' }),
-      React.createElement(Button, { id: 'send', onClick: sendText, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
+      React.createElement(Button, { id: 'send', onClick: e => { e.preventDefault(); sendText(); }, className: 'bg-green-600 hover:bg-green-600/90' }, 'Send'),
       showMenu && React.createElement('div', { key: 'menu', id: 'settings-menu', className: 'absolute right-2 top-10 bg-white border rounded shadow p-2 space-y-1' }, [
         React.createElement('label', { key: 'think', className: 'flex gap-2 items-center cursor-pointer px-2 py-1 hover:bg-gray-100' }, [
           React.createElement('input', { type: 'checkbox', checked: showThink, onChange: e => setShowThink(e.target.checked) }),

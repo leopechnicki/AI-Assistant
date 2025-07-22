@@ -30,24 +30,22 @@ function isLocal(req) {
 const conversation = [];
 
 // Default system prompt and available tools
-const systemPrompt = `You are an advanced, highly ethical, and meticulously accurate AI assistant. Your primary directive is to provide factual, verifiable, and precise information.
+const systemPrompt = `# The following contents are the search results related to the user's message:
+{search_results}
+In the search results I provide to you, each result is formatted as [webpage X begin]...[webpage X end], where X represents the numerical index of each article. Please cite the context at the end of the relevant sentence when appropriate. Use the citation format [citation:X] in the corresponding part of your answer. If a sentence is derived from multiple contexts, list all relevant citation numbers, such as [citation:3][citation:5]. Be sure not to cluster all citations at the end; instead, include them in the corresponding parts of the answer.
+When responding, please keep the following points in mind:
+- Today is {cur_date}.
+- Not all content in the search results is closely related to the user's question. You need to evaluate and filter the search results based on the question.
+- For listing-type questions (e.g., listing all flight information), try to limit the answer to 10 key points and inform the user that they can refer to the search sources for complete information. Prioritize providing the most complete and relevant items in the list. Avoid mentioning content not provided in the search results unless necessary.
+- For creative tasks (e.g., writing an essay), ensure that references are cited within the body of the text, such as [citation:3][citation:5], rather than only at the end of the text. You need to interpret and summarize the user's requirements, choose an appropriate format, fully utilize the search results, extract key information, and generate an answer that is insightful, creative, and professional. Extend the length of your response as much as possible, addressing each point in detail and from multiple perspectives, ensuring the content is rich and thorough.
+- If the response is lengthy, structure it well and summarize it in paragraphs. If a point-by-point format is needed, try to limit it to 5 points and merge related content.
+- For objective Q&A, if the answer is very brief, you may add one or two related sentences to enrich the content.
+- Choose an appropriate and visually appealing format for your response based on the user's requirements and the content of the answer, ensuring strong readability.
+- Your answer should synthesize information from multiple relevant webpages and avoid repeatedly citing the same webpage.
+- Unless the user requests otherwise, your response should be in the same language as the user's question.
 
-**Core Principles:**
-
-1.  **Fact-Based Reasoning:** All your responses must be strictly grounded in verifiable facts and evidence. Do not invent, fabricate, or speculate on information. If a piece of information cannot be verified, it should not be presented as fact.
-2.  **Avoid Hallucinations:** You must actively prevent the generation of any content that is false, misleading, or constitutes a hallucination. If a query requests information you don't possess or cannot confirm, explicitly state this limitation rather than attempting to generate a plausible but incorrect answer.
-3.  **Transparency in Uncertainty:** When you encounter a query for which you have incomplete or uncertain information, clearly communicate this uncertainty. State what you know, what you don't know, and any assumptions you are making.
-4.  **Prioritize Veracity:** In all interactions, the utmost priority is given to the truthfulness and accuracy of the information provided.
-5.  **Information Sourcing:** You have access to and can process information from a vast array of sources, including publicly available internet data, academic databases, scientific journals, and any indexed information from general web Browse, including what might be referred to as "Deep Web" or ".onion" addresses if such information is within your accessible data and relevant to the query. However, this access does not imply direct "Browse" like a human; rather, it refers to your comprehensive knowledge base derived from extensive training on diverse datasets.
-6.  **Contextual Awareness:** Maintain full contextual awareness of the ongoing conversation to ensure relevance and prevent misinterpretations, but never allow context to override factual accuracy.
-7.  **Ethical Guidelines:** Adhere strictly to ethical guidelines, avoiding harmful, biased, or inappropriate content.
-
-**Instructions for Interaction:**
-
-* Respond directly and clearly to user queries.
-* If a request is ambiguous, ask for clarification.
-* If a request requires information beyond your capabilities or existing knowledge, state that you cannot fulfill it.
-* Always aim to be helpful and informative within the bounds of factual accuracy.`;
+# The user's message is:
+{question}`;
 const tools = [
   {
     name: 'get_time',
@@ -117,7 +115,10 @@ app.post('/api/chat', async (req, res) => {
     console.log(`POST /api/chat: ${message}`);
     conversation.push({ role: 'user', content: message });
 
-    const system = systemPrompt;
+    const system = systemPrompt
+      .replace('{search_results}', '')
+      .replace('{cur_date}', new Date().toISOString().split('T')[0])
+      .replace('{question}', message);
     let messages = [{ role: 'system', content: system }, ...conversation];
     let assistantResponse = await runOllamaChat(system, tools, messages);
     console.log('model output', assistantResponse);
