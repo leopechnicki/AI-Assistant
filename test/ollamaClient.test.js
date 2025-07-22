@@ -1,21 +1,24 @@
-const { Readable } = require('stream');
-jest.mock('axios', () => ({ post: jest.fn() }));
-const axios = require('axios');
-
-function streamFor(lines) {
-  const r = new Readable({ read() {} });
-  lines.forEach(l => r.push(l + '\n'));
-  r.push(null);
-  return { data: r };
-}
+const mockChat = jest.fn();
+const mockGenerate = jest.fn();
+const mockShow = jest.fn();
+jest.mock('ollama', () => ({
+  Ollama: jest.fn().mockImplementation(() => ({
+    chat: mockChat,
+    generate: mockGenerate,
+    show: mockShow
+  }))
+}));
 
 afterEach(() => {
-  axios.post.mockReset();
+  mockChat.mockReset();
+  mockGenerate.mockReset();
+  mockShow.mockReset();
 });
 
 
 test('sendMessageStream yields content', async () => {
-  axios.post.mockResolvedValueOnce(streamFor([JSON.stringify({ message: { content: 'hello' } }), JSON.stringify({ done: true })]));
+  async function* gen() { yield { message: { content: 'hello' } }; }
+  mockChat.mockReturnValueOnce(gen());
   const { sendMessageStream } = require('../ollamaClient');
   const parts = [];
   for await (const p of sendMessageStream('hi')) parts.push(p);
