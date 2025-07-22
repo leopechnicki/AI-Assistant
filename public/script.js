@@ -79,37 +79,13 @@ function ChatApp() {
     }
     addMessage('user', text);
     input.value = '';
-    const res = await fetch('/api/chat/stream', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text })
     });
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let current = '';
-    addMessage('assistant', '');
-    const idx = messages.length + 1;
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value);
-      const parts = buffer.split('\n\n');
-      buffer = parts.pop();
-      for (const part of parts) {
-        const line = part.trim();
-        if (line.startsWith('data:')) {
-          const data = line.slice(5).trim();
-          if (data === '[DONE]') continue;
-          current += data + ' ';
-          setMessages(prev => {
-            const msgs = [...prev];
-            msgs[idx] = { role: 'assistant', text: current };
-            return msgs;
-          });
-        }
-      }
-    }
+    const dataRes = await res.json();
+    addMessage('assistant', dataRes.reply || dataRes.error);
   };
 
   const toggleMenu = () => setShowMenu(!showMenu);

@@ -14,9 +14,12 @@ This project is a small React application that communicates with a local Ollama 
    ```
 3. Start the server
    ```bash
-   npm start
-   ```
-   Open `http://localhost:3000` in your browser.
+  npm start
+  ```
+  Open `http://localhost:3000` in your browser.
+
+The client now uses the `/api/chat` endpoint which supports tool calling for
+retrieving the current time and weather information.
 
 ## Configuration
 

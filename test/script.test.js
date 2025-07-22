@@ -3,7 +3,7 @@ const { setupChat } = require('../public/script');
 
 global.fetch = jest.fn(() =>
   Promise.resolve({
-    body: { getReader: () => ({ read: () => Promise.resolve({ done: true }) }) }
+    json: () => Promise.resolve({ reply: 'ok' })
   })
 );
 
@@ -34,4 +34,14 @@ test('settings menu toggles', async () => {
   btn.click();
   await flush();
   expect(document.getElementById('settings-menu')).not.toBeNull();
+});
+
+test('sendText posts to /api/chat', async () => {
+  setupChat(document);
+  await flush();
+  const input = document.getElementById('input');
+  input.value = 'hello';
+  document.getElementById('send').click();
+  await flush();
+  expect(fetch).toHaveBeenCalledWith('/api/chat', expect.any(Object));
 });
