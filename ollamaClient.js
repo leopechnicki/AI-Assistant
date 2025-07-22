@@ -1,14 +1,12 @@
 const axios = require('axios');
-const MCP = require('./mcp');
 
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'MFDoom/deepseek-r1-tool-calling:8b';
+// Default model is the deepseek tool-calling model unless overridden
+const DEFAULT_MODEL =
+  process.env.OLLAMA_MODEL || 'MFDoom/deepseek-r1-tool-calling:8b';
 const BASE = process.env.OLLAMA_BASE || 'http://localhost:11434';
 
 const systemPrompt = 'You are a helpful assistant.';
 
-const tools = [];
-
-const availableFunctions = {};
 
 async function readStream(res) {
   let buffer = '';
@@ -25,64 +23,40 @@ async function readStream(res) {
   return messages;
 }
 
-async function requestOllama(messages, model) {
-  const res = await axios.post(
-    `${BASE}/api/chat`,
-    { model, messages, stream: true, tools, tool_choice: 'auto' },
-    { responseType: 'stream' }
-  );
-  const parts = await readStream(res);
-  const final = { role: 'assistant', content: '', tool_calls: null };
-  for (const p of parts) {
-    if (p.message?.content) final.content += p.message.content;
-    if (p.message?.tool_calls) final.tool_calls = p.message.tool_calls;
-  }
-  return final;
-}
-
-async function executeToolCalls(msg, history, model) {
-  if (!Array.isArray(msg.tool_calls) || !msg.tool_calls.length) {
-    return msg.content || '';
-  }
-  history.push(msg);
-  for (const call of msg.tool_calls) {
-    const fn = availableFunctions[call.function.name];
-    const args = JSON.parse(call.function.arguments);
-    const result = fn ? await fn(...Object.values(args)) : { error: 'not implemented' };
-    history.push({
-      role: 'tool',
-      tool_call_id: call.id,
-      name: call.function.name,
-      content: JSON.stringify(result)
-    });
-  }
-  const followUp = await requestOllama(history, model);
-  return followUp.content || '';
-}
-
-async function* sendMessageStream(message, devices = [], options = {}) {
-  const env = options.env || 'ollama';
-  if (env === 'local') {
-    const mcp = new MCP(devices);
-    const reply = await mcp.broadcast(message);
-    yield reply.join(', ');
-    return;
-  }
-  if (env !== 'ollama') throw new Error('Invalid env');
-
-  const history = [
+async function* sendMessageStream(message) {
+  const messages = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: message }
   ];
-
-  const first = await requestOllama(history, DEFAULT_MODEL);
-  const content = await executeToolCalls(first, history, DEFAULT_MODEL);
-  if (content) yield content;
+  const res = await axios.post(
+    `${BASE}/api/chat`,
+    { model: DEFAULT_MODEL, messages, stream: true },
+    { responseType: 'stream' }
+  );
+  let buffer = '';
+  for await (const chunk of res.data) {
+    buffer += chunk.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const data = JSON.parse(trimmed);
+      const delta = data.message || data;
+      if (delta.content) yield delta.content;
+    }
+  }
+  const trimmed = buffer.trim();
+  if (trimmed) {
+    const data = JSON.parse(trimmed);
+    const delta = data.message || data;
+    if (delta.content) yield delta.content;
+  }
 }
 
-async function sendMessage(message, devices = [], options = {}) {
+async function sendMessage(message) {
   let out = '';
-  for await (const part of sendMessageStream(message, devices, options)) out += part;
+  for await (const part of sendMessageStream(message)) out += part;
   return out;
 }
 

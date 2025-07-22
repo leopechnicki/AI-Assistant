@@ -10,7 +10,6 @@ app.use(express.json({ limit: '2mb' }));
 const {
   sendMessage,
   sendMessageStream,
-  getEnv,
   listModels,
   generateCompletion,
   showModel
@@ -27,14 +26,10 @@ function isLocal(req) {
 }
 
 app.post('/api/chat/stream', async (req, res) => {
-  const { message, env = 'ollama' } = req.body;
+  const { message } = req.body;
   if (!message) {
     console.log('POST /api/chat/stream missing message');
     return res.status(400).json({ error: 'Message is required' });
-  }
-  if (!['ollama', 'local'].includes(env)) {
-    console.log('POST /api/chat/stream invalid provider');
-    return res.status(400).json({ error: 'Invalid provider' });
   }
 
   try {
@@ -42,35 +37,31 @@ app.post('/api/chat/stream', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.flushHeaders();
-    for await (const chunk of sendMessageStream(message, [], { env })) {
+    for await (const chunk of sendMessageStream(message)) {
       res.write(`data: ${chunk}\n\n`);
     }
     res.write('data: [DONE]\n\n');
     res.end();
   } catch (err) {
-    console.error(`${env} stream failed`, err);
+    console.error('stream failed', err);
     res.write(`data: ${err.message}\n\n`);
     res.end();
   }
 });
 
 app.post('/api/chat', async (req, res) => {
-  const { message, env = 'ollama' } = req.body;
+  const { message } = req.body;
   if (!message) {
     console.log('POST /api/chat missing message');
     return res.status(400).json({ error: 'Message is required' });
   }
-  if (!['ollama', 'local'].includes(env)) {
-    console.log('POST /api/chat invalid provider');
-    return res.status(400).json({ error: 'Invalid provider' });
-  }
   try {
     console.log(`POST /api/chat: ${message}`);
-    const reply = await sendMessage(message, [], { env });
+    const reply = await sendMessage(message);
     console.log(`reply: ${reply}`);
     res.json({ reply });
   } catch (err) {
-    console.error(`${env} request failed`, err);
+    console.error('request failed', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -93,7 +84,7 @@ app.post('/api/generate', async (req, res) => {
 app.post('/api/show', async (req, res) => {
   const { model } = req.body || {};
   try {
-    const info = await showModel(model, { env: 'ollama' });
+    const info = await showModel(model);
     res.json({ info });
   } catch (err) {
     console.error('ollama show failed', err);
