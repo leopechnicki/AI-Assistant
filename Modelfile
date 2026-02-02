@@ -1,4 +1,0 @@
-FROM MFDoom/deepseek-r1-tool-calling:8b
-TEMPLATE templates/deepseek-tool.jinja
-PARAMETER temperature 0.6
-PARAMETER top_p 0.9
