@@ -3,14 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Assistant Chat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css">
+  <title>AI Assistant - clawdbot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 600px;
+      padding: 2rem;
+      text-align: center;
+    }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc; }
+    .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #38bdf8; }
+    .card p { color: #cbd5e1; line-height: 1.6; font-size: 0.95rem; }
+    code {
+      background: #334155;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #7dd3fc;
+    }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .steps { counter-reset: step; text-align: left; }
+    .steps li {
+      counter-increment: step;
+      list-style: none;
+      padding: 0.5rem 0;
+      padding-left: 2rem;
+      position: relative;
+      color: #cbd5e1;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      background: #334155;
+      color: #38bdf8;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body class="p-4 bg-gray-100 font-sans">
-  <div id="app"></div>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="script.js"></script>
+<body>
+  <div class="container">
+    <h1>AI Assistant</h1>
+    <p class="subtitle">Powered by clawdbot / OpenClaw</p>
+
+    <div class="card">
+      <h2>Quick Start</h2>
+      <ol class="steps">
+        <li>Run <code>npm run setup</code> to configure</li>
+        <li>Set your API key (Anthropic or OpenAI)</li>
+        <li>Create a Telegram bot via <code>@BotFather</code></li>
+        <li>Run <code>npm start</code> to launch the gateway</li>
+        <li>Message your bot on Telegram!</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Gateway Dashboard</h2>
+      <p>
+        When the gateway is running, the clawdbot dashboard is available at:<br>
+        <a href="http://localhost:18789/">http://localhost:18789/</a>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Useful Commands</h2>
+      <p>
+        <code>npm run setup</code> - Interactive setup wizard<br>
+        <code>npm start</code> - Start the gateway<br>
+        <code>npm start -- --verbose</code> - Start with verbose logging<br>
+        <code>npm run status</code> - Check installation status
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Documentation</h2>
+      <p>
+        <a href="https://docs.openclaw.ai/" target="_blank">OpenClaw Docs</a> &middot;
+        <a href="https://docs.openclaw.ai/channels/telegram" target="_blank">Telegram Setup</a> &middot;
+        <a href="https://github.com/clawdbot/clawdbot" target="_blank">GitHub</a>
+      </p>
+    </div>
+  </div>
 </body>
 </html>
