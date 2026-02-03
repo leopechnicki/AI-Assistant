@@ -153,6 +153,7 @@ async function main() {
       },
     },
     gateway: {
+      mode: 'local',
       port: parseInt(port, 10),
     },
   };

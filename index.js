@@ -69,6 +69,7 @@ function main() {
   const child = startGateway({
     port,
     verbose: process.argv.includes('--verbose'),
+    allowUnconfigured: !configExists(),
   });
 
   // Forward signals for graceful shutdown
