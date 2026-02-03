@@ -132,3 +132,19 @@ test('startGateway passes --allow-unconfigured when option is set', () => {
     expect.objectContaining({ stdio: 'inherit' })
   );
 });
+
+test('startGateway does not pass --allow-unconfigured when option is false', () => {
+  const { execSync, spawn } = require('child_process');
+  spawn.mockReturnValue({ on: jest.fn(), kill: jest.fn() });
+  execSync.mockImplementation((cmd) => {
+    if (cmd === 'which clawdbot') return '/usr/local/bin/clawdbot';
+    throw new Error('not found');
+  });
+  const gateway = loadGateway();
+  gateway.startGateway({ port: 18789, allowUnconfigured: false });
+  expect(spawn).toHaveBeenCalledWith(
+    'clawdbot',
+    ['gateway', '--port', '18789'],
+    expect.objectContaining({ stdio: 'inherit' })
+  );
+});

@@ -66,10 +66,12 @@ function main() {
   console.log('');
 
   // Start the gateway
+  // Pass --allow-unconfigured when config is missing OR incomplete (no gateway.mode)
+  const hasGatewayMode = config.gateway && config.gateway.mode;
   const child = startGateway({
     port,
     verbose: process.argv.includes('--verbose'),
-    allowUnconfigured: !configExists(),
+    allowUnconfigured: !configExists() || !hasGatewayMode,
   });
 
   // Forward signals for graceful shutdown
