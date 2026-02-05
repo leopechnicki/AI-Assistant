@@ -1,0 +1,14 @@
+{
+  "name": "@openclaw/signal",
+  "version": "2026.2.4",
+  "description": "Hex Signal channel plugin",
+  "type": "module",
+  "devDependencies": {
+    "hex": "workspace:*"
+  },
+  "hex": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

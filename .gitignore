@@ -1,8 +1,10 @@
-node_modules
-coverage
+node_modules/
+dist/
+coverage/
 
 # Environment variables (contains secrets)
 .env
+.env.local
 
 # OS files
 .DS_Store
@@ -10,3 +12,20 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Build artifacts
+*.tsbuildinfo
+build-info.json
+
+# Editor
+.vscode/
+.idea/
+
+# pnpm
+pnpm-lock.yaml
+
+# Old npm lock (migrated to pnpm)
+package-lock.json
+
+# Runtime state
+*.pid

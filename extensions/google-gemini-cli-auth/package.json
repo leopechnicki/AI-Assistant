@@ -1,0 +1,14 @@
+{
+  "name": "@openclaw/google-gemini-cli-auth",
+  "version": "2026.2.4",
+  "description": "Hex Gemini CLI OAuth provider plugin",
+  "type": "module",
+  "devDependencies": {
+    "hex": "workspace:*"
+  },
+  "hex": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
