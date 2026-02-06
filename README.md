@@ -2,7 +2,7 @@
 
 Your personal AI agent. Any OS. Any platform. Fully customizable.
 
-Hex is a powerful, open-source AI agent that runs locally on your machine. Built on [Hex](https://github.com/hex/hex), it connects to your favorite messaging platforms and AI models to provide a truly personal AI experience.
+Hex is a powerful, open-source AI agent that runs locally on your machine. Built on [OpenClaw](https://github.com/openclaw/openclaw), it connects to your favorite messaging platforms and AI models to provide a truly personal AI experience.
 
 ## Features
 
@@ -39,8 +39,8 @@ pnpm build
 # Run onboarding
 pnpm hex onboard
 
-# Start the gateway
-pnpm start
+# Wake up Hex (start all services)
+pnpm hex wakeup
 ```
 
 ## Development
@@ -55,8 +55,8 @@ pnpm test
 # Start the TUI
 pnpm tui
 
-# Start gateway in dev mode
-pnpm gateway:dev
+# Start in dev mode
+pnpm hex --dev wakeup
 ```
 
 ## Configuration

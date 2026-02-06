@@ -99,7 +99,7 @@ describe("buildAgentSystemPrompt", () => {
     });
 
     expect(prompt).toContain("## Hex CLI Quick Reference");
-    expect(prompt).toContain("hex gateway restart");
+    expect(prompt).toContain("hex wakeup restart");
     expect(prompt).toContain("Do not invent commands");
   });
 

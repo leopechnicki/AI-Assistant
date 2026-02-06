@@ -10,6 +10,7 @@ type SubCliEntry = {
   name: string;
   description: string;
   register: SubCliRegistrar;
+  hidden?: boolean;
 };
 
 const shouldRegisterPrimaryOnly = (argv: string[]) => {
@@ -33,6 +34,14 @@ const loadConfig = async (): Promise<HexConfig> => {
 
 const entries: SubCliEntry[] = [
   {
+    name: "wakeup",
+    description: "Wake up Hex — start the gateway and all services",
+    register: async (program) => {
+      const mod = await import("../wakeup-cli.js");
+      mod.registerWakeupCli(program);
+    },
+  },
+  {
     name: "acp",
     description: "Agent Control Protocol tools",
     register: async (program) => {
@@ -42,7 +51,8 @@ const entries: SubCliEntry[] = [
   },
   {
     name: "gateway",
-    description: "Gateway control",
+    description: "Gateway control (alias for wakeup)",
+    hidden: true,
     register: async (program) => {
       const mod = await import("../gateway-cli.js");
       mod.registerGatewayCli(program);
@@ -268,6 +278,9 @@ export async function registerSubCliByName(program: Command, name: string): Prom
 
 function registerLazyCommand(program: Command, entry: SubCliEntry) {
   const placeholder = program.command(entry.name).description(entry.description);
+  if (entry.hidden) {
+    placeholder.hideHelp(true);
+  }
   placeholder.allowUnknownOption(true);
   placeholder.allowExcessArguments(true);
   placeholder.action(async (...actionArgs) => {

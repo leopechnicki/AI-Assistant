@@ -165,7 +165,7 @@ export function renderRuntimeHints(
     }
   })();
   if (runtime.missingUnit) {
-    hints.push(`Service not installed. Run: ${formatCliCommand("hex gateway install", env)}`);
+    hints.push(`Service not installed. Run: ${formatCliCommand("hex wakeup install", env)}`);
     if (fileLog) {
       hints.push(`File logs: ${fileLog}`);
     }
@@ -192,8 +192,8 @@ export function renderRuntimeHints(
 
 export function renderGatewayServiceStartHints(env: NodeJS.ProcessEnv = process.env): string[] {
   const base = [
-    formatCliCommand("hex gateway install", env),
-    formatCliCommand("hex gateway", env),
+    formatCliCommand("hex wakeup install", env),
+    formatCliCommand("hex wakeup", env),
   ];
   const profile = env.HEX_PROFILE;
   switch (process.platform) {

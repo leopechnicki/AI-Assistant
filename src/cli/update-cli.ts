@@ -947,7 +947,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     if (result.reason === "not-git-install") {
       defaultRuntime.log(
         theme.warn(
-          `Skipped: this Hex install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("hex doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("hex gateway restart"), CLI_NAME)}\`.`,
+          `Skipped: this Hex install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("hex doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("hex wakeup restart"), CLI_NAME)}\`.`,
         ),
       );
       defaultRuntime.log(
@@ -1087,7 +1087,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         defaultRuntime.log(theme.warn(`Daemon restart failed: ${String(err)}`));
         defaultRuntime.log(
           theme.muted(
-            `You may need to restart the service manually: ${replaceCliName(formatCliCommand("hex gateway restart"), CLI_NAME)}`,
+            `You may need to restart the service manually: ${replaceCliName(formatCliCommand("hex wakeup restart"), CLI_NAME)}`,
           ),
         );
       }
@@ -1097,13 +1097,13 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     if (result.mode === "npm" || result.mode === "pnpm") {
       defaultRuntime.log(
         theme.muted(
-          `Tip: Run \`${replaceCliName(formatCliCommand("hex doctor"), CLI_NAME)}\`, then \`${replaceCliName(formatCliCommand("hex gateway restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
+          `Tip: Run \`${replaceCliName(formatCliCommand("hex doctor"), CLI_NAME)}\`, then \`${replaceCliName(formatCliCommand("hex wakeup restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
         ),
       );
     } else {
       defaultRuntime.log(
         theme.muted(
-          `Tip: Run \`${replaceCliName(formatCliCommand("hex gateway restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
+          `Tip: Run \`${replaceCliName(formatCliCommand("hex wakeup restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
         ),
       );
     }

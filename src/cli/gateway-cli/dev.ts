@@ -60,7 +60,7 @@ async function ensureDevWorkspace(dir: string) {
   const [agents, soul, tools, identity, user] = await Promise.all([
     loadDevTemplate(
       "AGENTS.dev.md",
-      `# AGENTS.md - Hex Dev Workspace\n\nDefault dev workspace for hex gateway --dev.\n`,
+      `# AGENTS.md - Hex Dev Workspace\n\nDefault dev workspace for hex wakeup --dev.\n`,
     ),
     loadDevTemplate(
       "SOUL.dev.md",

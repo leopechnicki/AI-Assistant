@@ -638,6 +638,6 @@ export async function statusCommand(
   if (gatewayReachable) {
     runtime.log(`  Need to test channels? ${formatCliCommand("hex status --deep")}`);
   } else {
-    runtime.log(`  Fix reachability first: ${formatCliCommand("hex gateway probe")}`);
+    runtime.log(`  Fix reachability first: ${formatCliCommand("hex wakeup probe")}`);
   }
 }

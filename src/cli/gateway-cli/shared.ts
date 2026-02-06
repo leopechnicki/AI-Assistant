@@ -86,21 +86,21 @@ export function renderGatewayServiceStopHints(env: NodeJS.ProcessEnv = process.e
   switch (process.platform) {
     case "darwin":
       return [
-        `Tip: ${formatCliCommand("hex gateway stop")}`,
+        `Tip: ${formatCliCommand("hex wakeup stop")}`,
         `Or: launchctl bootout gui/$UID/${resolveGatewayLaunchAgentLabel(profile)}`,
       ];
     case "linux":
       return [
-        `Tip: ${formatCliCommand("hex gateway stop")}`,
+        `Tip: ${formatCliCommand("hex wakeup stop")}`,
         `Or: systemctl --user stop ${resolveGatewaySystemdServiceName(profile)}.service`,
       ];
     case "win32":
       return [
-        `Tip: ${formatCliCommand("hex gateway stop")}`,
+        `Tip: ${formatCliCommand("hex wakeup stop")}`,
         `Or: schtasks /End /TN "${resolveGatewayWindowsTaskName(profile)}"`,
       ];
     default:
-      return [`Tip: ${formatCliCommand("hex gateway stop")}`];
+      return [`Tip: ${formatCliCommand("hex wakeup stop")}`];
   }
 }
 

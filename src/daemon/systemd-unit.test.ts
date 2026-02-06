@@ -3,7 +3,7 @@ import { parseSystemdExecStart } from "./systemd-unit.js";
 
 describe("parseSystemdExecStart", () => {
   it("splits on whitespace outside quotes", () => {
-    const execStart = "/usr/bin/hex gateway start --foo bar";
+    const execStart = "/usr/bin/hex wakeup start --foo bar";
     expect(parseSystemdExecStart(execStart)).toEqual([
       "/usr/bin/hex",
       "gateway",
@@ -14,7 +14,7 @@ describe("parseSystemdExecStart", () => {
   });
 
   it("preserves quoted arguments", () => {
-    const execStart = '/usr/bin/hex gateway start --name "My Bot"';
+    const execStart = '/usr/bin/hex wakeup start --name "My Bot"';
     expect(parseSystemdExecStart(execStart)).toEqual([
       "/usr/bin/hex",
       "gateway",
@@ -25,7 +25,7 @@ describe("parseSystemdExecStart", () => {
   });
 
   it("parses path arguments", () => {
-    const execStart = "/usr/bin/hex gateway start --path /tmp/hex";
+    const execStart = "/usr/bin/hex wakeup start --path /tmp/hex";
     expect(parseSystemdExecStart(execStart)).toEqual([
       "/usr/bin/hex",
       "gateway",

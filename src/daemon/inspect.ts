@@ -114,7 +114,7 @@ function isHexGatewayTaskName(name: string): boolean {
     return false;
   }
   const defaultName = resolveGatewayWindowsTaskName().toLowerCase();
-  return normalized === defaultName || normalized.startsWith("hex gateway");
+  return normalized === defaultName || normalized.startsWith("hex wakeup");
 }
 
 function tryExtractPlistLabel(contents: string): string | null {

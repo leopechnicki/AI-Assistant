@@ -136,7 +136,7 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
       );
       defaultRuntime.error(
         errorText(
-          `Fix: rerun \`${formatCliCommand("hex gateway install --force")}\` from the same --profile / HEX_STATE_DIR you expect.`,
+          `Fix: rerun \`${formatCliCommand("hex wakeup install --force")}\` from the same --profile / HEX_STATE_DIR you expect.`,
         ),
       );
     }
@@ -241,7 +241,7 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
       ),
     );
     defaultRuntime.error(
-      errorText(`Then reinstall: ${formatCliCommand("hex gateway install")}`),
+      errorText(`Then reinstall: ${formatCliCommand("hex wakeup install")}`),
     );
     spacer();
   }

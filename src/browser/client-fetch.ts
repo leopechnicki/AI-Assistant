@@ -12,7 +12,7 @@ function isAbsoluteHttp(url: string): boolean {
 function enhanceBrowserFetchError(url: string, err: unknown, timeoutMs: number): Error {
   const hint = isAbsoluteHttp(url)
     ? "If this is a sandboxed session, ensure the sandbox browser is running and try again."
-    : `Start (or restart) the Hex gateway (Hex.app menubar, or \`${formatCliCommand("hex gateway")}\`) and try again.`;
+    : `Start (or restart) the Hex gateway (Hex.app menubar, or \`${formatCliCommand("hex wakeup")}\`) and try again.`;
   const msg = String(err);
   const msgLower = msg.toLowerCase();
   const looksLikeTimeout =
