@@ -1,108 +1,89 @@
-# AI Assistant (clawdbot)
+# Hex
 
-Personal AI assistant powered by [clawdbot/OpenClaw](https://github.com/clawdbot/clawdbot). Run it on your local machine and chat via **Telegram** or the built-in web dashboard.
+Your personal AI agent. Any OS. Any platform. Fully customizable.
 
-## Prerequisites
+Hex is a powerful, open-source AI agent that runs locally on your machine. Built on [Hex](https://github.com/hex/hex), it connects to your favorite messaging platforms and AI models to provide a truly personal AI experience.
 
-- **Node.js >= 22** ([install with fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm))
-- **Anthropic API Key** ([get one here](https://console.anthropic.com/)) or OpenAI API Key
-- **Telegram bot token** (create one with [@BotFather](https://t.me/BotFather))
+## Features
+
+- **Multi-platform messaging**: WhatsApp, Telegram, Discord, Slack, Signal, iMessage, and more
+- **Multiple AI providers**: Claude, GPT, DeepSeek, and local models
+- **Browser control**: Automate Chrome/Chromium with screenshots and actions
+- **Skills system**: 55+ built-in skills, extensible with custom ones
+- **Gateway dashboard**: Local web UI for management
+- **Terminal UI (TUI)**: Interactive terminal chat interface
+- **Plugin SDK**: Build custom extensions and integrations
+- **Memory & RAG**: Vector-based memory with session persistence
+- **Fully customizable**: Fork it, modify it, make it yours
 
 ## Quick Start
 
-```bash
-# 1. Install project dependencies
-npm install
+### Prerequisites
 
-# 2. Run interactive setup (installs clawdbot, configures Telegram)
-npm run setup
+- Node.js 22.12.0 or later
+- pnpm 10.x
 
-# 3. Start the assistant
-npm start
-```
-
-The setup wizard will:
-- Install clawdbot globally if not present
-- Ask for your AI provider and API key
-- Ask for your Telegram bot token
-- Generate the configuration at `~/.openclaw/openclaw.json`
-
-## Usage
-
-After setup, just run:
+### Installation
 
 ```bash
-npm start
+# Clone the repository
+git clone <your-repo-url>
+cd hex
+
+# Install dependencies
+pnpm install
+
+# Build
+pnpm build
+
+# Run onboarding
+pnpm hex onboard
+
+# Start the gateway
+pnpm start
 ```
 
-Then message your bot on Telegram. The first message will require **pairing approval** in the terminal.
+## Development
 
-The gateway dashboard is available at `http://localhost:18789/`.
+```bash
+# Run in development mode
+pnpm dev
 
-## Commands
+# Run tests
+pnpm test
 
-| Command | Description |
-|---|---|
-| `npm run setup` | Interactive setup wizard |
-| `npm start` | Start the clawdbot gateway |
-| `npm start -- --verbose` | Start with verbose logging |
-| `npm run status` | Check installation status |
+# Start the TUI
+pnpm tui
+
+# Start gateway in dev mode
+pnpm gateway:dev
+```
 
 ## Configuration
 
-Configuration is stored at `~/.openclaw/openclaw.json`. The setup wizard generates it for you, but you can edit it manually.
+Hex stores its configuration in `~/.hex/hex.json`. You can override the location with the `HEX_CONFIG_PATH` environment variable.
 
-Minimal Telegram config:
+### Environment Variables
 
-```json
-{
-  "agent": {
-    "model": "anthropic/claude-sonnet-4-20250514"
-  },
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "botToken": "YOUR_TOKEN",
-      "dmPolicy": "pairing"
-    }
-  },
-  "gateway": {
-    "port": 18789
-  }
-}
-```
-
-API keys can be set in a `.env` file (copy `.env.example`) or as environment variables:
-
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-## Creating a Telegram Bot
-
-1. Open Telegram and search for **@BotFather**
-2. Send `/newbot`
-3. Choose a name and username (must end in `bot`)
-4. Copy the token and paste it during `npm run setup`
+| Variable | Description |
+|----------|-------------|
+| `HEX_CONFIG_PATH` | Custom config file path |
+| `HEX_STATE_DIR` | Custom state directory |
+| `HEX_GATEWAY_PORT` | Gateway port (default: 18789) |
+| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
+| `OPENAI_API_KEY` | OpenAI API key |
 
 ## Architecture
 
-This project is a thin launcher for clawdbot. It handles:
+Hex is built as a modular TypeScript application:
 
-- **setup.js** - Interactive configuration wizard
-- **index.js** - Starts the clawdbot gateway process
-- **lib/gateway.js** - Gateway process management and config I/O
+- `src/` — Core source code (agents, channels, gateway, CLI, config, etc.)
+- `extensions/` — Channel and integration extensions (33+)
+- `skills/` — Built-in skill modules (55+)
+- `ui/` — React-based web UI components
+- `packages/` — Additional packages
+- `docs/` — Documentation
 
-clawdbot itself handles all AI processing, Telegram integration, and the web dashboard.
+## License
 
-## Documentation
-
-- [OpenClaw Docs](https://docs.openclaw.ai/)
-- [Telegram Channel Setup](https://docs.openclaw.ai/channels/telegram)
-- [GitHub Repository](https://github.com/clawdbot/clawdbot)
-
-## Running Tests
-
-```bash
-npm test
-```
+MIT
