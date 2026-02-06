@@ -2,9 +2,7 @@
 name: coding-agent
 description: Run Codex CLI, Claude Code, OpenCode, or Pi Coding Agent via background process for programmatic control.
 metadata:
-  {
-    "hex": { "emoji": "🧩", "requires": { "anyBins": ["claude", "codex", "opencode", "pi"] } },
-  }
+  { "hex": { "emoji": "🧩", "requires": { "anyBins": ["claude", "codex", "opencode", "pi"] } } }
 ---
 
 # Coding Agent (bash-first)
@@ -260,7 +258,7 @@ For long-running background tasks, append a wake trigger to your prompt so Hex g
 ... your task here.
 
 When completely finished, run this command to notify me:
-hex gateway wake --text "Done: [brief summary of what was built]" --mode now
+hex wakeup --text "Done: [brief summary of what was built]" --mode now
 ```
 
 **Example:**
@@ -268,7 +266,7 @@ hex gateway wake --text "Done: [brief summary of what was built]" --mode now
 ```bash
 bash pty:true workdir:~/project background:true command:"codex --yolo exec 'Build a REST API for todos.
 
-When completely finished, run: hex gateway wake --text \"Done: Built todos REST API with CRUD endpoints\" --mode now'"
+When completely finished, run: hex wakeup --text \"Done: Built todos REST API with CRUD endpoints\" --mode now'"
 ```
 
 This triggers an immediate wake event — Skippy gets pinged in seconds, not 10 minutes.
