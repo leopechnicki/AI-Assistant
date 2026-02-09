@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveHexPackageRootSync } from "../../infra/hex-root.js";
+import { resolveHexPackageRootSync } from "../../infra/openclaw-root.js";
 
 function looksLikeSkillsDir(dir: string): boolean {
   try {

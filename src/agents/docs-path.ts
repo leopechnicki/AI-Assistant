@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolveHexPackageRoot } from "../infra/hex-root.js";
+import { resolveHexPackageRoot } from "../infra/openclaw-root.js";
 
 export async function resolveHexDocsPath(params: {
   workspaceDir?: string;

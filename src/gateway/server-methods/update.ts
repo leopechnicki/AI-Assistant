@@ -1,6 +1,6 @@
 import type { GatewayRequestHandlers } from "./types.js";
 import { loadConfig } from "../../config/config.js";
-import { resolveHexPackageRoot } from "../../infra/hex-root.js";
+import { resolveHexPackageRoot } from "../../infra/openclaw-root.js";
 import {
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,

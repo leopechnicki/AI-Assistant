@@ -17,7 +17,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
 });
 
 import "./test-helpers/fast-core-tools.js";
-import { createHexTools } from "./hex-tools.js";
+import { createHexTools } from "./openclaw-tools.js";
 
 describe("agents_list", () => {
   beforeEach(() => {

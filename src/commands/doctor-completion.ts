@@ -11,7 +11,7 @@ import {
   resolveShellFromEnv,
   usesSlowDynamicCompletion,
 } from "../cli/completion-cli.js";
-import { resolveHexPackageRoot } from "../infra/hex-root.js";
+import { resolveHexPackageRoot } from "../infra/openclaw-root.js";
 import { note } from "../terminal/note.js";
 
 type CompletionShell = "zsh" | "bash" | "fish" | "powershell";

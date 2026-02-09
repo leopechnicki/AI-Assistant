@@ -24,7 +24,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
 import { emitAgentEvent } from "../infra/agent-events.js";
 import "./test-helpers/fast-core-tools.js";
 import { sleep } from "../utils.js";
-import { createHexTools } from "./hex-tools.js";
+import { createHexTools } from "./openclaw-tools.js";
 import { resetSubagentRegistryForTests } from "./subagent-registry.js";
 
 describe("hex-tools: subagents", () => {

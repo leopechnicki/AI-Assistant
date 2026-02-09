@@ -21,7 +21,7 @@ vi.mock("../infra/update-runner.js", () => ({
   runGatewayUpdate: vi.fn(),
 }));
 
-vi.mock("../infra/hex-root.js", () => ({
+vi.mock("../infra/openclaw-root.js", () => ({
   resolveHexPackageRoot: vi.fn(),
 }));
 
@@ -102,7 +102,7 @@ describe("update-cli", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const { resolveHexPackageRoot } = await import("../infra/hex-root.js");
+    const { resolveHexPackageRoot } = await import("../infra/openclaw-root.js");
     const { readConfigFileSnapshot } = await import("../config/config.js");
     const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
       await import("../infra/update-check.js");
@@ -240,7 +240,7 @@ describe("update-cli", () => {
         "utf-8",
       );
 
-      const { resolveHexPackageRoot } = await import("../infra/hex-root.js");
+      const { resolveHexPackageRoot } = await import("../infra/openclaw-root.js");
       const { runGatewayUpdate } = await import("../infra/update-runner.js");
       const { checkUpdateStatus } = await import("../infra/update-check.js");
       const { updateCommand } = await import("./update-cli.js");
@@ -305,7 +305,7 @@ describe("update-cli", () => {
         "utf-8",
       );
 
-      const { resolveHexPackageRoot } = await import("../infra/hex-root.js");
+      const { resolveHexPackageRoot } = await import("../infra/openclaw-root.js");
       const { readConfigFileSnapshot } = await import("../config/config.js");
       const { resolveNpmChannelTag } = await import("../infra/update-check.js");
       const { runGatewayUpdate } = await import("../infra/update-runner.js");
@@ -358,7 +358,7 @@ describe("update-cli", () => {
         "utf-8",
       );
 
-      const { resolveHexPackageRoot } = await import("../infra/hex-root.js");
+      const { resolveHexPackageRoot } = await import("../infra/openclaw-root.js");
       const { runGatewayUpdate } = await import("../infra/update-runner.js");
       const { updateCommand } = await import("./update-cli.js");
 
@@ -537,7 +537,7 @@ describe("update-cli", () => {
         "utf-8",
       );
 
-      const { resolveHexPackageRoot } = await import("../infra/hex-root.js");
+      const { resolveHexPackageRoot } = await import("../infra/openclaw-root.js");
       const { resolveNpmChannelTag } = await import("../infra/update-check.js");
       const { runGatewayUpdate } = await import("../infra/update-runner.js");
       const { defaultRuntime } = await import("../runtime.js");
@@ -590,7 +590,7 @@ describe("update-cli", () => {
         "utf-8",
       );
 
-      const { resolveHexPackageRoot } = await import("../infra/hex-root.js");
+      const { resolveHexPackageRoot } = await import("../infra/openclaw-root.js");
       const { resolveNpmChannelTag } = await import("../infra/update-check.js");
       const { runGatewayUpdate } = await import("../infra/update-runner.js");
       const { defaultRuntime } = await import("../runtime.js");
