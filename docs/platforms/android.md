@@ -9,6 +9,8 @@ title: "Android App"
 
 # Android App (Node)
 
+> **Want to run the Gateway directly on an Android phone?** See [Termux guide](/platforms/termux) for running Hex Gateway on Android via Termux (no root required). This page covers the **Android companion app** (node client that connects to a remote gateway).
+
 ## Support snapshot
 
 - Role: companion node app (Android does not host the Gateway).
