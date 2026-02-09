@@ -1028,6 +1028,7 @@
                   "platforms/linux",
                   "platforms/windows",
                   "platforms/android",
+                  "platforms/termux",
                   "platforms/ios"
                 ]
               },

@@ -355,4 +355,5 @@ echo 'wireless-power off' | sudo tee -a /etc/network/interfaces
 - [DigitalOcean guide](/platforms/digitalocean) — cloud alternative
 - [Hetzner guide](/install/hetzner) — Docker setup
 - [Tailscale](/gateway/tailscale) — remote access
+- [Termux (Android) guide](/platforms/termux) — repurpose an old phone as a gateway
 - [Nodes](/nodes) — pair your laptop/phone with the Pi gateway
