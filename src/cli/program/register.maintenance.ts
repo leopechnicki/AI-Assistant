@@ -3,10 +3,13 @@ import { dashboardCommand } from "../../commands/dashboard.js";
 import { doctorCommand } from "../../commands/doctor.js";
 import { resetCommand } from "../../commands/reset.js";
 import { uninstallCommand } from "../../commands/uninstall.js";
+import { callGateway } from "../../gateway/call.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatDocsLink } from "../../terminal/links.js";
-import { theme } from "../../terminal/theme.js";
+import { colorize, isRich, theme } from "../../terminal/theme.js";
+import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
+import { withProgress } from "../progress.js";
 
 export function registerMaintenanceCommands(program: Command) {
   program
@@ -61,8 +64,7 @@ export function registerMaintenanceCommands(program: Command) {
     .description("Reset local config/state (keeps the CLI installed)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/reset", "docs.hex.ai/cli/reset")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/reset", "docs.hex.ai/cli/reset")}\n`,
     )
     .option("--scope <scope>", "config|config+creds+sessions|full (default: interactive prompt)")
     .option("--yes", "Skip confirmation prompts", false)
@@ -107,6 +109,51 @@ export function registerMaintenanceCommands(program: Command) {
           nonInteractive: Boolean(opts.nonInteractive),
           dryRun: Boolean(opts.dryRun),
         });
+      });
+    });
+
+  program
+    .command("wakeup")
+    .description("Wake the gateway (trigger an immediate cron cycle)")
+    .option("--text <message>", "Message to include in the wake event", "")
+    .option("--mode <mode>", "Wake mode: now | next-heartbeat", "now")
+    .option("--url <url>", "Gateway WebSocket URL")
+    .option("--token <token>", "Gateway token (if required)")
+    .option("--password <password>", "Gateway password (password auth)")
+    .option("--timeout <ms>", "Timeout in ms", "10000")
+    .option("--json", "Output JSON", false)
+    .action(async (opts) => {
+      await runCommandWithRuntime(defaultRuntime, async () => {
+        const params = {
+          text: String(opts.text ?? ""),
+          mode: String(opts.mode ?? "now") as "now" | "next-heartbeat",
+        };
+        const result = await withProgress(
+          {
+            label: "Waking gateway",
+            indeterminate: true,
+            enabled: opts.json !== true,
+          },
+          async () =>
+            await callGateway({
+              url: opts.url,
+              token: opts.token,
+              password: opts.password,
+              method: "wake",
+              params,
+              timeoutMs: Number(opts.timeout ?? 10_000),
+              clientName: GATEWAY_CLIENT_NAMES.CLI,
+              mode: GATEWAY_CLIENT_MODES.CLI,
+            }),
+        );
+        if (opts.json) {
+          defaultRuntime.log(JSON.stringify(result, null, 2));
+          return;
+        }
+        const rich = isRich();
+        defaultRuntime.log(
+          `${colorize(rich, theme.success, "OK")} — gateway woke${params.text ? `: ${params.text}` : ""}`,
+        );
       });
     });
 }
