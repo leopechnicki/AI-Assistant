@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import "./test-helpers/fast-coding-tools.js";
-import { createHexTools } from "./hex-tools.js";
+import { createHexTools } from "./openclaw-tools.js";
 import { __testing, createHexCodingTools } from "./pi-tools.js";
 import { createSandboxedReadTool } from "./pi-tools.read.js";
 import { createBrowserTool } from "./tools/browser-tool.js";

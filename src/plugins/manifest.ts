@@ -3,8 +3,8 @@ import path from "node:path";
 import type { PluginConfigUiHint, PluginKind } from "./types.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 
-export const PLUGIN_MANIFEST_FILENAME = "hex.plugin.json";
-export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
+export const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
+export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME, "hex.plugin.json"] as const;
 
 export type PluginManifest = {
   id: string;

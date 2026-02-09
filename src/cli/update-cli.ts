@@ -14,7 +14,7 @@ import {
   resolveUpdateAvailability,
 } from "../commands/status.update.js";
 import { readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
-import { resolveHexPackageRoot } from "../infra/hex-root.js";
+import { resolveHexPackageRoot } from "../infra/openclaw-root.js";
 import { trimLogTail } from "../infra/restart-sentinel.js";
 import { parseSemver } from "../infra/runtime-guard.js";
 import {

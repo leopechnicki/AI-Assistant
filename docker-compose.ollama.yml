@@ -1,0 +1,92 @@
+##
+## Docker Compose: Hex Gateway + Ollama (local LLM)
+##
+## Usage:
+##   1. Copy .env.docker.example to .env.docker and edit values
+##   2. docker compose -f docker-compose.ollama.yml --env-file .env.docker up --build
+##
+## The Ollama container runs your local LLMs. The Hex gateway connects
+## to it and serves Telegram (or other channels) using those models.
+##
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: hex-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # One-shot: pull models into Ollama on first run, then exit
+  ollama-models:
+    image: ollama/ollama:latest
+    container_name: hex-ollama-models
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Pulling models..."
+        ollama pull qwen2.5:7b
+        ollama pull llama3.1:8b
+        echo "Models ready."
+    restart: "no"
+
+  hex-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hex-gateway
+    depends_on:
+      ollama:
+        condition: service_healthy
+    ports:
+      - "${HEX_GATEWAY_PORT:-18789}:18789"
+    volumes:
+      - hex-state:/home/node/.hex
+      - ./docker/hex.json:/home/node/.hex/hex.json:ro
+      - ./docker/.env:/home/node/.hex/.env:ro
+      - ./docker/auth-profiles.json:/home/node/.hex/agents/main/agent/auth-profiles.json
+    environment:
+      - HOME=/home/node
+      - TERM=xterm-256color
+      - OLLAMA_API_KEY=ollama-local
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - HEX_GATEWAY_TOKEN=${HEX_GATEWAY_TOKEN:-changeme}
+    command:
+      [
+        "node",
+        "dist/entry.js",
+        "gateway",
+        "run",
+        "--allow-unconfigured",
+        "--bind",
+        "lan",
+        "--port",
+        "18789",
+        "--force",
+      ]
+    init: true
+    restart: unless-stopped
+
+volumes:
+  ollama-data:
+  hex-state:

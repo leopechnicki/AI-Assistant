@@ -216,7 +216,7 @@ vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout,
 }));
 
-vi.mock("../infra/hex-root.js", () => ({
+vi.mock("../infra/openclaw-root.js", () => ({
   resolveHexPackageRoot,
 }));
 

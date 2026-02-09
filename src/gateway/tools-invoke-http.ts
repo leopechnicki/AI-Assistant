@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createHexTools } from "../agents/hex-tools.js";
+import { createHexTools } from "../agents/openclaw-tools.js";
 import {
   filterToolsByPolicy,
   resolveEffectiveToolPolicy,

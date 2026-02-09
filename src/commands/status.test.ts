@@ -209,7 +209,7 @@ vi.mock("../gateway/call.js", async (importOriginal) => {
 vi.mock("../gateway/session-utils.js", () => ({
   listAgentsForGateway: mocks.listAgentsForGateway,
 }));
-vi.mock("../infra/hex-root.js", () => ({
+vi.mock("../infra/openclaw-root.js", () => ({
   resolveHexPackageRoot: vi.fn().mockResolvedValue("/tmp/hex"),
 }));
 vi.mock("../infra/os-summary.js", () => ({
