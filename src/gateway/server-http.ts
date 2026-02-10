@@ -18,6 +18,7 @@ import {
   handleControlUiHttpRequest,
   type ControlUiRootState,
 } from "./control-ui.js";
+import { handleOverlayHttpRequest } from "../overlay/overlay-server.js";
 import { applyHookMappings } from "./hooks-mapping.js";
 import {
   extractHookToken,
@@ -293,6 +294,10 @@ export function createGatewayHttpServer(opts: {
         if (await canvasHost.handleHttpRequest(req, res)) {
           return;
         }
+      }
+      // Serve the overlay page at /overlay
+      if (handleOverlayHttpRequest(req, res, { basePath: controlUiBasePath })) {
+        return;
       }
       if (controlUiEnabled) {
         if (

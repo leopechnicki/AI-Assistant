@@ -239,6 +239,22 @@ const entries: SubCliEntry[] = [
       mod.registerCompletionCli(program);
     },
   },
+  {
+    name: "overlay",
+    description: "Open the AI overlay (transparent floating window)",
+    register: async (program) => {
+      const mod = await import("../overlay-cli.js");
+      mod.registerOverlayCli(program);
+    },
+  },
+  {
+    name: "codex-login",
+    description: "Authenticate with OpenAI Codex via OAuth",
+    register: async (program) => {
+      const mod = await import("../codex-login-cli.js");
+      mod.registerCodexLoginCli(program);
+    },
+  },
 ];
 
 export function getSubCliEntries(): SubCliEntry[] {
